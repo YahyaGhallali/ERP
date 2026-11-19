@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu racine : l'application apparaît sur l'écran d'accueil d'Odoo -->
+    <menuitem id="menu_insea_absence_root" name="Absences &amp; Congés"
+              web_icon="insea_hr_leave_custom,static/description/icon.png"
+              groups="group_absence_employee" sequence="45"/>
+
+    <!-- Espace employé -->
+    <menuitem id="menu_insea_absence_my" name="Mes demandes"
+              parent="menu_insea_absence_root" action="action_absence_request_my" sequence="10"/>
+
+    <!-- Espace validation -->
+    <menuitem id="menu_insea_absence_approval" name="Validation"
+              parent="menu_insea_absence_root" sequence="20"
+              groups="group_absence_manager"/>
+    <menuitem id="menu_insea_absence_to_approve" name="À valider (N+1)"
+              parent="menu_insea_absence_approval" action="action_absence_request_to_approve"
+              sequence="10"/>
+    <menuitem id="menu_insea_absence_hr" name="Validation RH"
+              parent="menu_insea_absence_approval" action="action_absence_request_hr"
+              sequence="20" groups="group_absence_hr"/>
+    <menuitem id="menu_insea_absence_all" name="Toutes les demandes"
+              parent="menu_insea_absence_approval" action="action_absence_request_all"
+              sequence="30"/>
+
+    <!-- Planning & reporting -->
+    <menuitem id="menu_insea_absence_calendar" name="Planning"
+              parent="menu_insea_absence_root" action="action_absence_request_calendar"
+              sequence="30" groups="group_absence_manager"/>
+    <menuitem id="menu_insea_absence_reporting" name="Analyse"
+              parent="menu_insea_absence_root" action="action_absence_request_analysis"
+              sequence="40" groups="group_absence_hr"/>
+
+    <!-- Configuration RH -->
+    <menuitem id="menu_insea_absence_config" name="Configuration"
+              parent="menu_insea_absence_root" sequence="90" groups="group_absence_hr"/>
+    <menuitem id="menu_insea_absence_balances" name="Soldes de congés"
+              parent="menu_insea_absence_config" action="action_employee_insea_balance"
+              sequence="10"/>
+    <menuitem id="menu_insea_absence_holidays" name="Jours fériés"
+              parent="menu_insea_absence_config"
+              action="resource.action_resource_calendar_leave_tree" sequence="20"/>
+</odoo>

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_absence_request_employee,insea.absence.request employee,model_insea_absence_request,group_absence_employee,1,1,1,1
+access_absence_request_manager,insea.absence.request manager,model_insea_absence_request,group_absence_manager,1,1,1,1
+access_absence_request_hr,insea.absence.request hr,model_insea_absence_request,group_absence_hr,1,1,1,1
+access_absence_refuse_wizard_manager,insea.absence.refuse.wizard manager,model_insea_absence_refuse_wizard,group_absence_manager,1,1,1,1

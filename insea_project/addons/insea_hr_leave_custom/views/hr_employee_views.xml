@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Héritage de vue : on enrichit la fiche employé standard d'Odoo -->
+    <record id="view_employee_form_insea_absence" model="ir.ui.view">
+        <field name="name">hr.employee.form.insea.absence</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_open_insea_requests" type="object"
+                        class="oe_stat_button" icon="fa-calendar-check-o"
+                        groups="insea_hr_leave_custom.group_absence_hr">
+                    <field name="insea_request_count" widget="statinfo" string="Absences"/>
+                </button>
+            </div>
+            <xpath expr="//page[@name='hr_settings']" position="before">
+                <page name="insea_leaves" string="Congés &amp; Absences"
+                      groups="insea_hr_leave_custom.group_absence_hr">
+                    <group>
+                        <group string="Paramètres">
+                            <field name="insea_hire_date"/>
+                            <field name="insea_initial_balance"/>
+                            <field name="insea_months_worked"/>
+                        </group>
+                        <group string="Compteur congés payés (1,5 j / mois)">
+                            <field name="insea_leave_accrued"/>
+                            <field name="insea_leave_taken"/>
+                            <field name="insea_leave_pending"/>
+                            <field name="insea_leave_balance" class="fw-bold"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue liste des soldes (menu Configuration RH) -->
+    <record id="view_employee_list_insea_balance" model="ir.ui.view">
+        <field name="name">hr.employee.list.insea.balance</field>
+        <field name="model">hr.employee</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="Soldes de congés" editable="bottom" create="0" delete="0">
+                <field name="name" readonly="1"/>
+                <field name="department_id" readonly="1"/>
+                <field name="parent_id" readonly="1" string="Manager"/>
+                <field name="insea_hire_date"/>
+                <field name="insea_initial_balance"/>
+                <field name="insea_months_worked"/>
+                <field name="insea_leave_accrued"/>
+                <field name="insea_leave_taken"/>
+                <field name="insea_leave_pending"/>
+                <field name="insea_leave_balance" class="fw-bold"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_employee_insea_balance" model="ir.actions.act_window">
+        <field name="name">Soldes de congés</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_employee_list_insea_balance')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('hr.view_employee_form')})]"/>
+    </record>
+</odoo>

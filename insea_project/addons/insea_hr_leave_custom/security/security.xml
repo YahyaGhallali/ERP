@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =====================================================================
+         GROUPES DE SÉCURITÉ (hiérarchiques : RH > Manager > Employé)
+         Dans la fiche utilisateur, ils apparaissent comme une liste
+         déroulante unique "Absences & Congés".
+         ===================================================================== -->
+    <record id="module_category_insea_absence" model="ir.module.category">
+        <field name="name">Absences &amp; Congés</field>
+        <field name="description">Gestion des autorisations d'absence et des congés (INSEA)</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_absence_employee" model="res.groups">
+        <field name="name">Employé</field>
+        <field name="category_id" ref="module_category_insea_absence"/>
+        <field name="comment">Crée et suit ses propres demandes.</field>
+    </record>
+
+    <record id="group_absence_manager" model="res.groups">
+        <field name="name">Responsable hiérarchique (Manager)</field>
+        <field name="category_id" ref="module_category_insea_absence"/>
+        <field name="implied_ids" eval="[(4, ref('group_absence_employee'))]"/>
+        <field name="comment">Valide (N+1) les demandes de son équipe.</field>
+    </record>
+
+    <record id="group_absence_hr" model="res.groups">
+        <field name="name">Responsable RH</field>
+        <field name="category_id" ref="module_category_insea_absence"/>
+        <field name="implied_ids" eval="[(4, ref('group_absence_manager')), (4, ref('hr.group_hr_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        <field name="comment">Validation finale, accès à toutes les demandes et aux soldes.</field>
+    </record>
+
+    <!-- Tout utilisateur interne est au minimum "Employé" -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_absence_employee'))]"/>
+    </record>
+
+    <!-- =====================================================================
+         RÈGLES D'ENREGISTREMENT (Record Rules)
+         Les règles de groupes différents s'additionnent (OU logique).
+         ===================================================================== -->
+    <data noupdate="1">
+        <!-- Employé : uniquement ses propres demandes -->
+        <record id="rule_absence_request_employee" model="ir.rule">
+            <field name="name">Absences : l'employé voit ses demandes</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_absence_employee'))]"/>
+        </record>
+
+        <!-- Manager : les demandes de son équipe (collaborateurs directs) -->
+        <record id="rule_absence_request_manager" model="ir.rule">
+            <field name="name">Absences : le manager voit son équipe</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="domain_force">[('employee_id.parent_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_absence_manager'))]"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- RH : accès à l'ensemble des demandes -->
+        <record id="rule_absence_request_hr" model="ir.rule">
+            <field name="name">Absences : les RH voient tout</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_absence_hr'))]"/>
+        </record>
+
+        <!-- Multi-société -->
+        <record id="rule_absence_request_company" model="ir.rule">
+            <field name="name">Absences : multi-société</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>

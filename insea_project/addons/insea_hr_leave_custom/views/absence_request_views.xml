@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- =====================================================================
+         VUE FORMULAIRE (avec barre de statut interactive)
+         ===================================================================== -->
+    <record id="view_absence_request_form" model="ir.ui.view">
+        <field name="name">insea.absence.request.form</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <form string="Demande d'absence">
+                <header>
+                    <button name="action_submit" type="object" string="Soumettre"
+                            class="oe_highlight" invisible="state != 'draft'" data-hotkey="s"/>
+                    <button name="action_manager_approve" type="object" string="Valider (N+1)"
+                            class="oe_highlight" invisible="not can_manager_approve"
+                            groups="insea_hr_leave_custom.group_absence_manager" data-hotkey="v"/>
+                    <button name="action_hr_approve" type="object" string="Validation RH"
+                            class="oe_highlight" invisible="not can_hr_approve"
+                            groups="insea_hr_leave_custom.group_absence_hr" data-hotkey="v"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refuser"
+                            invisible="not can_refuse"
+                            groups="insea_hr_leave_custom.group_absence_manager" data-hotkey="r"/>
+                    <button name="action_reset_to_draft" type="object" string="Remettre en brouillon"
+                            invisible="state != 'refused'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,manager_approved,approved"/>
+                </header>
+                <sheet>
+                    <!-- Champs techniques utilisés dans les conditions d'affichage -->
+                    <field name="can_manager_approve" invisible="1"/>
+                    <field name="can_hr_approve" invisible="1"/>
+                    <field name="can_refuse" invisible="1"/>
+                    <field name="requires_attachment" invisible="1"/>
+                    <field name="has_attachment" invisible="1"/>
+                    <field name="impacts_balance" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not requires_attachment or has_attachment or state in ('approved', 'refused')">
+                        <strong>Justificatif obligatoire :</strong>
+                        cette demande ne pourra pas être validée tant qu'un fichier
+                        (certificat médical, acte d'état civil...) n'aura pas été joint.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state != 'refused'">
+                        <strong>Demande refusée</strong> par <field name="refused_by_id" readonly="1" class="d-inline"/> :
+                        <field name="refusal_reason" readonly="1" class="d-inline"/>
+                    </div>
+
+                    <widget name="web_ribbon" title="Validé" bg_color="text-bg-success"
+                            invisible="state != 'approved'"/>
+                    <widget name="web_ribbon" title="Refusé" bg_color="text-bg-danger"
+                            invisible="state != 'refused'"/>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Demandeur">
+                            <field name="employee_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="department_id"/>
+                            <field name="manager_id"/>
+                        </group>
+                        <group string="Nature de la demande">
+                            <field name="category" widget="radio" readonly="state != 'draft'"/>
+                            <field name="authorization_reason"
+                                   invisible="category != 'authorization'"
+                                   required="category == 'authorization'"
+                                   readonly="state != 'draft'"/>
+                            <field name="family_event"
+                                   invisible="category != 'exceptional'"
+                                   required="category == 'exceptional'"
+                                   readonly="state != 'draft'"/>
+                            <field name="requires_hr_validation" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Période">
+                        <group invisible="category != 'authorization'">
+                            <field name="authorization_date"
+                                   required="category == 'authorization'"
+                                   readonly="state != 'draft'"/>
+                            <field name="hour_from" widget="float_time" readonly="state != 'draft'"/>
+                            <field name="hour_to" widget="float_time" readonly="state != 'draft'"/>
+                        </group>
+                        <group invisible="category == 'authorization'">
+                            <field name="date_from" required="category != 'authorization'"
+                                   readonly="state != 'draft'"/>
+                            <field name="date_to" required="category != 'authorization'"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="duration_display"/>
+                            <field name="employee_leave_balance" invisible="not impacts_balance"/>
+                            <field name="employee_leave_pending" invisible="not impacts_balance"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Justificatifs &amp; commentaire" name="attachments">
+                            <group>
+                                <field name="attachment_ids" widget="many2many_binary"
+                                       string="Pièces justificatives"
+                                       readonly="state in ('approved', 'refused')"/>
+                                <field name="description" readonly="state != 'draft'"
+                                       placeholder="Précisions éventuelles pour votre responsable..."/>
+                            </group>
+                        </page>
+                        <page string="Suivi de validation" name="tracking">
+                            <group>
+                                <group string="Soumission">
+                                    <field name="submit_date"/>
+                                </group>
+                                <group string="Validation N+1">
+                                    <field name="manager_user_id"/>
+                                    <field name="manager_date"/>
+                                </group>
+                                <group string="Validation RH" invisible="not requires_hr_validation">
+                                    <field name="hr_user_id"/>
+                                    <field name="hr_date"/>
+                                </group>
+                                <group string="Refus" invisible="state != 'refused'">
+                                    <field name="refused_by_id"/>
+                                    <field name="refusal_date"/>
+                                    <field name="refusal_reason"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- =====================================================================
+         VUE LISTE (arborescence)
+         ===================================================================== -->
+    <record id="view_absence_request_list" model="ir.ui.view">
+        <field name="name">insea.absence.request.list</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <list string="Demandes d'absence"
+                  decoration-muted="state == 'draft'"
+                  decoration-info="state == 'submitted'"
+                  decoration-warning="state == 'manager_approved'"
+                  decoration-success="state == 'approved'"
+                  decoration-danger="state == 'refused'">
+                <field name="name"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="department_id" optional="hide"/>
+                <field name="category"/>
+                <field name="period_display"/>
+                <field name="start_datetime" string="Début" optional="hide"/>
+                <field name="duration_display"/>
+                <field name="duration_days" sum="Total jours" optional="hide"/>
+                <field name="duration_hours" sum="Total heures" optional="hide"/>
+                <field name="manager_id" optional="hide"/>
+                <field name="has_attachment" string="Justif." widget="boolean" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'manager_approved'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- =====================================================================
+         VUE RECHERCHE (filtres et regroupements)
+         ===================================================================== -->
+    <record id="view_absence_request_search" model="ir.ui.view">
+        <field name="name">insea.absence.request.search</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher une demande">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="manager_id"/>
+                <separator/>
+                <filter name="filter_my" string="Mes demandes"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter name="filter_my_team" string="Mon équipe"
+                        domain="[('manager_user_related_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_to_approve" string="À valider (N+1)"
+                        domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_to_approve_hr" string="À valider (RH)"
+                        domain="[('state', '=', 'manager_approved')]"/>
+                <filter name="filter_approved" string="Validées"
+                        domain="[('state', '=', 'approved')]"/>
+                <filter name="filter_refused" string="Refusées"
+                        domain="[('state', '=', 'refused')]"/>
+                <separator/>
+                <filter name="filter_authorization" string="Autorisations de sortie"
+                        domain="[('category', '=', 'authorization')]"/>
+                <filter name="filter_paid" string="Congés payés"
+                        domain="[('category', '=', 'paid')]"/>
+                <filter name="filter_exceptional" string="Congés exceptionnels"
+                        domain="[('category', '=', 'exceptional')]"/>
+                <filter name="filter_sick" string="Congés maladie"
+                        domain="[('category', '=', 'sick')]"/>
+                <separator/>
+                <filter name="filter_missing_doc" string="Justificatif manquant"
+                        domain="[('attachment_ids', '=', False), '|', ('category', 'in', ('sick', 'exceptional')), ('authorization_reason', '=', 'medical')]"/>
+                <separator/>
+                <filter name="filter_start" string="Date de début" date="start_datetime"/>
+                <group expand="0" string="Regrouper par">
+                    <filter name="group_employee" string="Employé" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Département" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_category" string="Type" context="{'group_by': 'category'}"/>
+                    <filter name="group_state" string="Statut" context="{'group_by': 'state'}"/>
+                    <filter name="group_month" string="Mois" context="{'group_by': 'start_datetime:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- =====================================================================
+         VUE CALENDRIER (visibilité des départs)
+         ===================================================================== -->
+    <record id="view_absence_request_calendar" model="ir.ui.view">
+        <field name="name">insea.absence.request.calendar</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <calendar string="Planning des absences"
+                      date_start="start_datetime" date_stop="end_datetime"
+                      all_day="is_all_day" color="employee_id" mode="month"
+                      quick_create="0" event_open_popup="1">
+                <field name="employee_id" filters="1" avatar_field="avatar_128"/>
+                <field name="category" filters="1"/>
+                <field name="state"/>
+                <field name="period_display"/>
+                <field name="duration_display"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- =====================================================================
+         VUES GRAPHIQUE & TABLEAU CROISÉ (analyse)
+         ===================================================================== -->
+    <record id="view_absence_request_graph" model="ir.ui.view">
+        <field name="name">insea.absence.request.graph</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse des absences" type="bar" stacked="1">
+                <field name="start_datetime" interval="month"/>
+                <field name="category"/>
+                <field name="duration_days" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_absence_request_pivot" model="ir.ui.view">
+        <field name="name">insea.absence.request.pivot</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des absences">
+                <field name="employee_id" type="row"/>
+                <field name="category" type="col"/>
+                <field name="duration_days" type="measure"/>
+                <field name="duration_hours" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- =====================================================================
+         ACTIONS DE FENÊTRE
+         ===================================================================== -->
+    <record id="action_absence_request_my" model="ir.actions.act_window">
+        <field name="name">Mes demandes</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Créez votre première demande</p>
+            <p>Autorisation de sortie, congé payé, congé exceptionnel ou maladie.</p>
+        </field>
+    </record>
+
+    <record id="action_absence_request_to_approve" model="ir.actions.act_window">
+        <field name="name">Demandes à valider (N+1)</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="context">{'search_default_filter_to_approve': 1, 'search_default_filter_my_team': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aucune demande en attente</p>
+        </field>
+    </record>
+
+    <record id="action_absence_request_hr" model="ir.actions.act_window">
+        <field name="name">Validation RH</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="context">{'search_default_filter_to_approve_hr': 1}</field>
+    </record>
+
+    <record id="action_absence_request_all" model="ir.actions.act_window">
+        <field name="name">Toutes les demandes</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">list,form,calendar,pivot,graph</field>
+    </record>
+
+    <record id="action_absence_request_calendar" model="ir.actions.act_window">
+        <field name="name">Planning des absences</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="domain">[('state', 'in', ('submitted', 'manager_approved', 'approved'))]</field>
+    </record>
+
+    <record id="action_absence_request_analysis" model="ir.actions.act_window">
+        <field name="name">Analyse</field>
+        <field name="res_model">insea.absence.request</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_filter_approved': 1}</field>
+    </record>
+</odoo>

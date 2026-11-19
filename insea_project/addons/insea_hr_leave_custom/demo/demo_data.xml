@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    JEU DE DONNÉES DE DÉMONSTRATION (société Lambda)
+    Chargé uniquement si la base est créée avec "Données de démonstration".
+
+    Comptes de connexion (identifiant / mot de passe) :
+      rh       / rh        Salma Benali    - Responsable RH
+      manager  / manager   Karim Alaoui    - Responsable hiérarchique (équipe Data)
+      youssef  / youssef   Youssef Amrani  - Employé (équipe de Karim)
+      imane    / imane     Imane Tazi      - Employée (équipe de Karim)
+      omar     / omar      Omar Idrissi    - Employé (équipe de Karim)
+-->
+<odoo>
+    <data noupdate="1">
+        <!-- ============ Département ============ -->
+        <record id="demo_department_data" model="hr.department">
+            <field name="name">Data &amp; Statistiques</field>
+        </record>
+
+        <!-- ============ Utilisateurs ============ -->
+        <record id="demo_user_rh" model="res.users">
+            <field name="name">Salma Benali</field>
+            <field name="login">rh</field>
+            <field name="password">rh</field>
+            <field name="email">salma.benali@lambda.example</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('insea_hr_leave_custom.group_absence_hr')])]"/>
+        </record>
+        <record id="demo_user_manager" model="res.users">
+            <field name="name">Karim Alaoui</field>
+            <field name="login">manager</field>
+            <field name="password">manager</field>
+            <field name="email">karim.alaoui@lambda.example</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('insea_hr_leave_custom.group_absence_manager')])]"/>
+        </record>
+        <record id="demo_user_youssef" model="res.users">
+            <field name="name">Youssef Amrani</field>
+            <field name="login">youssef</field>
+            <field name="password">youssef</field>
+            <field name="email">youssef.amrani@lambda.example</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
+        </record>
+        <record id="demo_user_imane" model="res.users">
+            <field name="name">Imane Tazi</field>
+            <field name="login">imane</field>
+            <field name="password">imane</field>
+            <field name="email">imane.tazi@lambda.example</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
+        </record>
+        <record id="demo_user_omar" model="res.users">
+            <field name="name">Omar Idrissi</field>
+            <field name="login">omar</field>
+            <field name="password">omar</field>
+            <field name="email">omar.idrissi@lambda.example</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
+        </record>
+
+        <!-- ============ Employés (hiérarchie : Salma > Karim > équipe) ============ -->
+        <record id="demo_employee_rh" model="hr.employee">
+            <field name="name">Salma Benali</field>
+            <field name="user_id" ref="demo_user_rh"/>
+            <field name="job_title">Responsable RH</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(years=6)).strftime('%Y-%m-%d')"/>
+        </record>
+        <record id="demo_employee_manager" model="hr.employee">
+            <field name="name">Karim Alaoui</field>
+            <field name="user_id" ref="demo_user_manager"/>
+            <field name="parent_id" ref="demo_employee_rh"/>
+            <field name="department_id" ref="demo_department_data"/>
+            <field name="job_title">Chef d'équipe Data</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(years=4, months=3)).strftime('%Y-%m-%d')"/>
+        </record>
+        <record id="demo_employee_youssef" model="hr.employee">
+            <field name="name">Youssef Amrani</field>
+            <field name="user_id" ref="demo_user_youssef"/>
+            <field name="parent_id" ref="demo_employee_manager"/>
+            <field name="department_id" ref="demo_department_data"/>
+            <field name="job_title">Data Analyst</field>
+            <field name="tz">Africa/Casablanca</field>
+            <!-- 14 mois => 21 jours acquis -->
+            <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(months=14, days=3)).strftime('%Y-%m-%d')"/>
+        </record>
+        <record id="demo_employee_imane" model="hr.employee">
+            <field name="name">Imane Tazi</field>
+            <field name="user_id" ref="demo_user_imane"/>
+            <field name="parent_id" ref="demo_employee_manager"/>
+            <field name="department_id" ref="demo_department_data"/>
+            <field name="job_title">Data Engineer</field>
+            <field name="tz">Africa/Casablanca</field>
+            <!-- Embauche récente : 2 mois => 3 jours acquis (solde faible, utile pour la démo) -->
+            <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(months=2, days=5)).strftime('%Y-%m-%d')"/>
+        </record>
+        <record id="demo_employee_omar" model="hr.employee">
+            <field name="name">Omar Idrissi</field>
+            <field name="user_id" ref="demo_user_omar"/>
+            <field name="parent_id" ref="demo_employee_manager"/>
+            <field name="department_id" ref="demo_department_data"/>
+            <field name="job_title">Statisticien</field>
+            <field name="tz">Africa/Casablanca</field>
+            <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(years=2, months=1)).strftime('%Y-%m-%d')"/>
+            <field name="insea_initial_balance">2</field>
+        </record>
+
+        <!-- ============ Justificatif de démonstration ============ -->
+        <record id="demo_attachment_certificate" model="ir.attachment">
+            <field name="name">certificat_medical_omar.pdf</field>
+            <field name="datas" type="base64" file="insea_hr_leave_custom/demo/certificat_medical_demo.pdf"/>
+            <field name="mimetype">application/pdf</field>
+        </record>
+
+        <!-- ============ Demandes (dans différents états du workflow) ============
+             Les dates sont relatives à la date d'installation ; weekday=0 => lundi -->
+
+        <!-- 1. Congé payé passé, VALIDÉ (consomme 3 j du solde de Youssef) -->
+        <record id="demo_request_youssef_paid_past" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_youssef"/>
+            <field name="category">paid</field>
+            <field name="date_from" eval="(DateTime.today() - relativedelta(days=45, weekday=0)).strftime('%Y-%m-%d')"/>
+            <field name="date_to" eval="(DateTime.today() - relativedelta(days=45, weekday=0) + relativedelta(days=2)).strftime('%Y-%m-%d')"/>
+            <field name="description">Congé de fin d'été</field>
+            <field name="state">approved</field>
+            <field name="manager_user_id" ref="demo_user_manager"/>
+            <field name="hr_user_id" ref="demo_user_rh"/>
+        </record>
+
+        <!-- 2. Congé payé de 5 jours à venir, SOUMIS (attend le manager) -->
+        <record id="demo_request_youssef_paid_future" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_youssef"/>
+            <field name="category">paid</field>
+            <field name="date_from" eval="(DateTime.today() + relativedelta(days=20, weekday=0)).strftime('%Y-%m-%d')"/>
+            <field name="date_to" eval="(DateTime.today() + relativedelta(days=20, weekday=0) + relativedelta(days=4)).strftime('%Y-%m-%d')"/>
+            <field name="description">Voyage familial</field>
+            <field name="state">submitted</field>
+        </record>
+
+        <!-- 3. Autorisation médicale SOUMISE sans justificatif (démo du blocage) -->
+        <record id="demo_request_imane_auth_medical" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_imane"/>
+            <field name="category">authorization</field>
+            <field name="authorization_reason">medical</field>
+            <field name="authorization_date" eval="(DateTime.today() + relativedelta(days=3, weekday=1)).strftime('%Y-%m-%d')"/>
+            <field name="hour_from">9.0</field>
+            <field name="hour_to">11.5</field>
+            <field name="state">submitted</field>
+        </record>
+
+        <!-- 4. Congé maladie VALIDÉ N+1, en attente RH, avec certificat -->
+        <record id="demo_request_omar_sick" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_omar"/>
+            <field name="category">sick</field>
+            <field name="date_from" eval="(DateTime.today() - relativedelta(days=12, weekday=0)).strftime('%Y-%m-%d')"/>
+            <field name="date_to" eval="(DateTime.today() - relativedelta(days=12, weekday=0) + relativedelta(days=2)).strftime('%Y-%m-%d')"/>
+            <field name="attachment_ids" eval="[(6, 0, [ref('demo_attachment_certificate')])]"/>
+            <field name="state">manager_approved</field>
+            <field name="manager_user_id" ref="demo_user_manager"/>
+        </record>
+
+        <!-- 5. Autorisation administrative REFUSÉE (avec motif) -->
+        <record id="demo_request_omar_auth_refused" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_omar"/>
+            <field name="category">authorization</field>
+            <field name="authorization_reason">administrative</field>
+            <field name="authorization_date" eval="(DateTime.today() + relativedelta(days=8, weekday=3)).strftime('%Y-%m-%d')"/>
+            <field name="hour_from">14.0</field>
+            <field name="hour_to">17.0</field>
+            <field name="state">refused</field>
+            <field name="refusal_reason">Réunion client importante ce jour-là, merci de proposer un autre créneau.</field>
+            <field name="refused_by_id" ref="demo_user_manager"/>
+        </record>
+
+        <!-- 6. Autorisation VALIDÉE (finale dès le manager) -->
+        <record id="demo_request_youssef_auth_ok" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_youssef"/>
+            <field name="category">authorization</field>
+            <field name="authorization_reason">administrative</field>
+            <field name="authorization_date" eval="(DateTime.today() - relativedelta(days=6, weekday=2)).strftime('%Y-%m-%d')"/>
+            <field name="hour_from">8.5</field>
+            <field name="hour_to">10.5</field>
+            <field name="state">approved</field>
+            <field name="manager_user_id" ref="demo_user_manager"/>
+        </record>
+
+        <!-- 7. Congé exceptionnel (mariage) en BROUILLON -->
+        <record id="demo_request_imane_marriage" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_imane"/>
+            <field name="category">exceptional</field>
+            <field name="family_event">marriage</field>
+            <field name="date_from" eval="(DateTime.today() + relativedelta(days=35, weekday=0)).strftime('%Y-%m-%d')"/>
+            <field name="date_to" eval="(DateTime.today() + relativedelta(days=35, weekday=0) + relativedelta(days=3)).strftime('%Y-%m-%d')"/>
+            <field name="description">Mariage le samedi suivant</field>
+        </record>
+    </data>
+</odoo>
