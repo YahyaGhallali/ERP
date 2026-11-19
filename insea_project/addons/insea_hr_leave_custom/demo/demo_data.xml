@@ -4,11 +4,11 @@
     Chargé uniquement si la base est créée avec "Données de démonstration".
 
     Comptes de connexion (identifiant / mot de passe) :
-      rh       / rh        Salma Benali    - Responsable RH
-      manager  / manager   Karim Alaoui    - Responsable hiérarchique (équipe Data)
-      youssef  / youssef   Youssef Amrani  - Employé (équipe de Karim)
-      imane    / imane     Imane Tazi      - Employée (équipe de Karim)
-      omar     / omar      Omar Idrissi    - Employé (équipe de Karim)
+      yahya    / yahya     Yahya G.     - Responsable RH
+      mohamed  / mohamed   Mohamed D.   - Responsable hiérarchique (équipe Data)
+      oualid   / oualid    Oualid A.    - Employé (équipe de Mohamed)
+      issalmou / issalmou  Issalmou A.  - Employé (équipe de Mohamed)
+      bilal    / bilal     Bilal E.     - Employé (équipe de Mohamed)
 -->
 <odoo>
     <data noupdate="1">
@@ -19,56 +19,56 @@
 
         <!-- ============ Utilisateurs ============ -->
         <record id="demo_user_rh" model="res.users">
-            <field name="name">Salma Benali</field>
-            <field name="login">rh</field>
-            <field name="password">rh</field>
-            <field name="email">salma.benali@lambda.example</field>
+            <field name="name">Yahya G.</field>
+            <field name="login">yahya</field>
+            <field name="password">yahya</field>
+            <field name="email">yahya.g@lambda.example</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('insea_hr_leave_custom.group_absence_hr')])]"/>
         </record>
         <record id="demo_user_manager" model="res.users">
-            <field name="name">Karim Alaoui</field>
-            <field name="login">manager</field>
-            <field name="password">manager</field>
-            <field name="email">karim.alaoui@lambda.example</field>
+            <field name="name">Mohamed D.</field>
+            <field name="login">mohamed</field>
+            <field name="password">mohamed</field>
+            <field name="email">mohamed.d@lambda.example</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('insea_hr_leave_custom.group_absence_manager')])]"/>
         </record>
-        <record id="demo_user_youssef" model="res.users">
-            <field name="name">Youssef Amrani</field>
-            <field name="login">youssef</field>
-            <field name="password">youssef</field>
-            <field name="email">youssef.amrani@lambda.example</field>
+        <record id="demo_user_oualid" model="res.users">
+            <field name="name">Oualid A.</field>
+            <field name="login">oualid</field>
+            <field name="password">oualid</field>
+            <field name="email">oualid.a@lambda.example</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
         </record>
-        <record id="demo_user_imane" model="res.users">
-            <field name="name">Imane Tazi</field>
-            <field name="login">imane</field>
-            <field name="password">imane</field>
-            <field name="email">imane.tazi@lambda.example</field>
+        <record id="demo_user_issalmou" model="res.users">
+            <field name="name">Issalmou A.</field>
+            <field name="login">issalmou</field>
+            <field name="password">issalmou</field>
+            <field name="email">issalmou.a@lambda.example</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
         </record>
-        <record id="demo_user_omar" model="res.users">
-            <field name="name">Omar Idrissi</field>
-            <field name="login">omar</field>
-            <field name="password">omar</field>
-            <field name="email">omar.idrissi@lambda.example</field>
+        <record id="demo_user_bilal" model="res.users">
+            <field name="name">Bilal E.</field>
+            <field name="login">bilal</field>
+            <field name="password">bilal</field>
+            <field name="email">bilal.e@lambda.example</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/>
         </record>
 
-        <!-- ============ Employés (hiérarchie : Salma > Karim > équipe) ============ -->
+        <!-- ============ Employés (hiérarchie : Yahya > Mohamed > équipe) ============ -->
         <record id="demo_employee_rh" model="hr.employee">
-            <field name="name">Salma Benali</field>
+            <field name="name">Yahya G.</field>
             <field name="user_id" ref="demo_user_rh"/>
             <field name="job_title">Responsable RH</field>
             <field name="tz">Africa/Casablanca</field>
             <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(years=6)).strftime('%Y-%m-%d')"/>
         </record>
         <record id="demo_employee_manager" model="hr.employee">
-            <field name="name">Karim Alaoui</field>
+            <field name="name">Mohamed D.</field>
             <field name="user_id" ref="demo_user_manager"/>
             <field name="parent_id" ref="demo_employee_rh"/>
             <field name="department_id" ref="demo_department_data"/>
@@ -76,9 +76,9 @@
             <field name="tz">Africa/Casablanca</field>
             <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(years=4, months=3)).strftime('%Y-%m-%d')"/>
         </record>
-        <record id="demo_employee_youssef" model="hr.employee">
-            <field name="name">Youssef Amrani</field>
-            <field name="user_id" ref="demo_user_youssef"/>
+        <record id="demo_employee_oualid" model="hr.employee">
+            <field name="name">Oualid A.</field>
+            <field name="user_id" ref="demo_user_oualid"/>
             <field name="parent_id" ref="demo_employee_manager"/>
             <field name="department_id" ref="demo_department_data"/>
             <field name="job_title">Data Analyst</field>
@@ -86,9 +86,9 @@
             <!-- 14 mois => 21 jours acquis -->
             <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(months=14, days=3)).strftime('%Y-%m-%d')"/>
         </record>
-        <record id="demo_employee_imane" model="hr.employee">
-            <field name="name">Imane Tazi</field>
-            <field name="user_id" ref="demo_user_imane"/>
+        <record id="demo_employee_issalmou" model="hr.employee">
+            <field name="name">Issalmou A.</field>
+            <field name="user_id" ref="demo_user_issalmou"/>
             <field name="parent_id" ref="demo_employee_manager"/>
             <field name="department_id" ref="demo_department_data"/>
             <field name="job_title">Data Engineer</field>
@@ -96,9 +96,9 @@
             <!-- Embauche récente : 2 mois => 3 jours acquis (solde faible, utile pour la démo) -->
             <field name="insea_hire_date" eval="(DateTime.today() - relativedelta(months=2, days=5)).strftime('%Y-%m-%d')"/>
         </record>
-        <record id="demo_employee_omar" model="hr.employee">
-            <field name="name">Omar Idrissi</field>
-            <field name="user_id" ref="demo_user_omar"/>
+        <record id="demo_employee_bilal" model="hr.employee">
+            <field name="name">Bilal E.</field>
+            <field name="user_id" ref="demo_user_bilal"/>
             <field name="parent_id" ref="demo_employee_manager"/>
             <field name="department_id" ref="demo_department_data"/>
             <field name="job_title">Statisticien</field>
@@ -109,7 +109,7 @@
 
         <!-- ============ Justificatif de démonstration ============ -->
         <record id="demo_attachment_certificate" model="ir.attachment">
-            <field name="name">certificat_medical_omar.pdf</field>
+            <field name="name">certificat_medical_bilal.pdf</field>
             <field name="datas" type="base64" file="insea_hr_leave_custom/demo/certificat_medical_demo.pdf"/>
             <field name="mimetype">application/pdf</field>
         </record>
@@ -117,9 +117,9 @@
         <!-- ============ Demandes (dans différents états du workflow) ============
              Les dates sont relatives à la date d'installation ; weekday=0 => lundi -->
 
-        <!-- 1. Congé payé passé, VALIDÉ (consomme 3 j du solde de Youssef) -->
-        <record id="demo_request_youssef_paid_past" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_youssef"/>
+        <!-- 1. Congé payé passé, VALIDÉ (consomme 3 j du solde de Oualid) -->
+        <record id="demo_request_oualid_paid_past" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_oualid"/>
             <field name="category">paid</field>
             <field name="date_from" eval="(DateTime.today() - relativedelta(days=45, weekday=0)).strftime('%Y-%m-%d')"/>
             <field name="date_to" eval="(DateTime.today() - relativedelta(days=45, weekday=0) + relativedelta(days=2)).strftime('%Y-%m-%d')"/>
@@ -130,8 +130,8 @@
         </record>
 
         <!-- 2. Congé payé de 5 jours à venir, SOUMIS (attend le manager) -->
-        <record id="demo_request_youssef_paid_future" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_youssef"/>
+        <record id="demo_request_oualid_paid_future" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_oualid"/>
             <field name="category">paid</field>
             <field name="date_from" eval="(DateTime.today() + relativedelta(days=20, weekday=0)).strftime('%Y-%m-%d')"/>
             <field name="date_to" eval="(DateTime.today() + relativedelta(days=20, weekday=0) + relativedelta(days=4)).strftime('%Y-%m-%d')"/>
@@ -140,8 +140,8 @@
         </record>
 
         <!-- 3. Autorisation médicale SOUMISE sans justificatif (démo du blocage) -->
-        <record id="demo_request_imane_auth_medical" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_imane"/>
+        <record id="demo_request_issalmou_auth_medical" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_issalmou"/>
             <field name="category">authorization</field>
             <field name="authorization_reason">medical</field>
             <field name="authorization_date" eval="(DateTime.today() + relativedelta(days=3, weekday=1)).strftime('%Y-%m-%d')"/>
@@ -151,8 +151,8 @@
         </record>
 
         <!-- 4. Congé maladie VALIDÉ N+1, en attente RH, avec certificat -->
-        <record id="demo_request_omar_sick" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_omar"/>
+        <record id="demo_request_bilal_sick" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_bilal"/>
             <field name="category">sick</field>
             <field name="date_from" eval="(DateTime.today() - relativedelta(days=12, weekday=0)).strftime('%Y-%m-%d')"/>
             <field name="date_to" eval="(DateTime.today() - relativedelta(days=12, weekday=0) + relativedelta(days=2)).strftime('%Y-%m-%d')"/>
@@ -162,8 +162,8 @@
         </record>
 
         <!-- 5. Autorisation administrative REFUSÉE (avec motif) -->
-        <record id="demo_request_omar_auth_refused" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_omar"/>
+        <record id="demo_request_bilal_auth_refused" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_bilal"/>
             <field name="category">authorization</field>
             <field name="authorization_reason">administrative</field>
             <field name="authorization_date" eval="(DateTime.today() + relativedelta(days=8, weekday=3)).strftime('%Y-%m-%d')"/>
@@ -175,8 +175,8 @@
         </record>
 
         <!-- 6. Autorisation VALIDÉE (finale dès le manager) -->
-        <record id="demo_request_youssef_auth_ok" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_youssef"/>
+        <record id="demo_request_oualid_auth_ok" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_oualid"/>
             <field name="category">authorization</field>
             <field name="authorization_reason">administrative</field>
             <field name="authorization_date" eval="(DateTime.today() - relativedelta(days=6, weekday=2)).strftime('%Y-%m-%d')"/>
@@ -187,8 +187,8 @@
         </record>
 
         <!-- 7. Congé exceptionnel (mariage) en BROUILLON -->
-        <record id="demo_request_imane_marriage" model="insea.absence.request">
-            <field name="employee_id" ref="demo_employee_imane"/>
+        <record id="demo_request_issalmou_marriage" model="insea.absence.request">
+            <field name="employee_id" ref="demo_employee_issalmou"/>
             <field name="category">exceptional</field>
             <field name="family_event">marriage</field>
             <field name="date_from" eval="(DateTime.today() + relativedelta(days=35, weekday=0)).strftime('%Y-%m-%d')"/>

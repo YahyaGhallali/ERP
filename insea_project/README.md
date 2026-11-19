@@ -31,11 +31,11 @@ After changing code:
 
 | Login | Password | Person | Role |
 |---|---|---|---|
-| `rh` | `rh` | Salma Benali | Responsable RH (final validation, sees all) |
-| `manager` | `manager` | Karim Alaoui | Manager N+1 of the team |
-| `youssef` | `youssef` | Youssef Amrani | Employee (21 days earned) |
-| `imane` | `imane` | Imane Tazi | Employee, hired 2 months ago (3 days) |
-| `omar` | `omar` | Omar Idrissi | Employee |
+| `yahya` | `yahya` | Yahya G. | Responsable RH (final validation, sees all) |
+| `mohamed` | `mohamed` | Mohamed D. | Manager N+1 of the team |
+| `oualid` | `oualid` | Oualid A. | Employee (21 days earned) |
+| `issalmou` | `issalmou` | Issalmou A. | Employee, hired 2 months ago (3 days) |
+| `bilal` | `bilal` | Bilal E. | Employee |
 | `admin` | `admin` | Administrator | System admin (also HR) |
 
 Demo requests cover every state: draft, submitted, waiting HR, approved, refused,
