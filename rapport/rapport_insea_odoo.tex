@@ -165,7 +165,7 @@ Quatre contrôles d'intégrité transverses s'appliquent automatiquement :
     \item \textbf{Blocage sur justificatif manquant :} la validation finale (manager ou RH selon le cas) est bloquée tant qu'aucune pièce jointe n'est associée aux demandes qui l'exigent.
 \end{enumerate}
 
-Les demandes suivent un cycle de vie en 5 états (\textit{Brouillon}, \textit{Soumis}, \textit{Validé N+1}, \textit{Validé}, \textit{Refusé}). Après soumission, la demande est verrouillée en écriture pour l'employé (hormis l'ajout de pièces justificatives tant qu'elle est en cours d'instruction). Tout refus impose la saisie d'un motif et notifie automatiquement l'employé dans le fil de discussion (\textit{chatter}).
+Les demandes suivent un cycle de vie en 6 états (\textit{Brouillon}, \textit{Soumis}, \textit{Validé N+1}, \textit{Validé}, \textit{Refusé}, \textit{Annulé}). Après soumission, la demande est verrouillée en écriture pour l'employé (hormis l'ajout de pièces justificatives tant qu'elle est en cours d'instruction). Tout refus ou toute annulation impose la saisie d'un motif via un assistant dédié et notifie automatiquement les parties prenantes (chatter et modèle e-mail). L'annulation par les RH d'un congé payé déjà validé recrédite automatiquement le solde de l'employé. Une fois validée, chaque demande peut être imprimée au format PDF (\textit{Titre de congé} ou \textit{Bon d'autorisation de sortie}).
 
 % =============================================================================
 % 2. CONCEPTION ET ARCHITECTURE LOGICIELLE (UML)
@@ -242,7 +242,7 @@ Conformément au cahier des charges, la figure~\ref{fig:classdiag} distingue vis
 \begin{itemize}[itemsep=1pt]
     \item \textbf{\color{stdBorder} Bleu (pointillé) -- Classes standard Odoo réutilisées} : \texttt{res.users}, \texttt{hr.department}, \texttt{ir.attachment}, \texttt{mail.thread / mail.activity.mixin}, \texttt{resource.calendar.leaves}.
     \item \textbf{\color{extBorder} Ambre -- Classe standard étendue par héritage (\texttt{\_inherit})} : \texttt{hr.employee}.
-    \item \textbf{\color{customBorder} Vert -- Classes créées sur-mesure (\texttt{\_name})} : le modèle métier principal \texttt{insea.absence.request} et le modèle transitoire \texttt{insea.absence.refuse.wizard}.
+    \item \textbf{\color{customBorder} Vert -- Classes créées sur-mesure (\texttt{\_name})} : le modèle métier principal \texttt{insea.absence.request} et les modèles transitoires \texttt{insea.absence.refuse.wizard} et \texttt{insea.absence.cancel.wizard}.
 \end{itemize}
 
 \begin{figure}[H]
@@ -316,13 +316,14 @@ Conformément au cahier des charges, la figure~\ref{fig:classdiag} distingue vis
         + start\_datetime, end\_datetime : Datetime (calc.)\\
         + duration\_hours, duration\_days : Float (calc.)\\
         + requires\_attachment, requires\_hr\_validation : Bool\\
-        + state : Selection (5 états)\\
-        + manager\_user\_id, hr\_user\_id, refusal\_reason\\
+        + state : Selection (6 états : \ldots, \texttt{cancelled})\\
+        + manager\_user\_id, hr\_user\_id, refusal\_reason, cancel\_reason\\
         \hrule\vspace{2pt}
         + \_check\_authorization\_duration() / \_monthly\_cap()\\
         + \_check\_overlap(), \_check\_balance(), \_check\_notice\_period()\\
-        + action\_submit(), action\_manager\_approve()\\
-        + action\_hr\_approve(), \_do\_refuse(), action\_reset\_to\_draft()\\
+        + action\_submit(), action\_manager\_approve(), action\_hr\_approve()\\
+        + \_do\_refuse(), \_do\_cancel(), action\_reset\_to\_draft()\\
+        + action\_print\_report(), \_cron\_send\_reminders()\\
         + write(), unlink() \textit{(verrouillage post-soumission)}
     };
 
@@ -346,10 +347,10 @@ Conformément au cahier des charges, la figure~\ref{fig:classdiag} distingue vis
         + calendar\_id (jours fériés)
     };
 
-    % Custom TransientModel Wizard
-    \node[custom, text width=4.6cm] (wiz) at (8.1, -3.2) {
+    % Custom TransientModel Wizards
+    \node[custom, text width=4.9cm] (wiz) at (8.1, -3.2) {
         \centering\textbf{\color{customBorder}$\ll$TransientModel$\gg$}\\
-        \textbf{insea.absence.refuse.wizard}\\[2pt]
+        \textbf{refuse\_wizard \& cancel\_wizard}\\[2pt]
         \hrule\vspace{2pt}
         \raggedright
         + request\_id : Many2one\\
@@ -381,6 +382,7 @@ La figure~\ref{fig:statediag} présente la machine à états complète d'une ins
     state/.style={rectangle, rounded corners=8pt, draw=inseaBlue, fill=inseaLight, line width=1pt, minimum width=2.9cm, minimum height=1.05cm, align=center, font=\small\bfseries, text=inseaBlue},
     approved/.style={state, draw=customBorder, fill=customBg, text=customBorder},
     refused/.style={state, draw=refuseBorder, fill=refuseBg, text=refuseBorder},
+    cancelled/.style={state, draw=grayText, fill=gray!12, text=grayText},
     trans/.style={-{Stealth[length=2.4mm]}, thick, color=inseaBlue},
     lbl/.style={font=\scriptsize, align=center, fill=white, inner sep=2pt}
 ]
@@ -390,6 +392,7 @@ La figure~\ref{fig:statediag} présente la machine à états complète d'une ins
     \node[state] (mgr) at (14.0, 0) {Validé N+1\\(\texttt{manager\_approved})};
     \node[approved] (app) at (14.0, -4.4) {Validé\\(\texttt{approved})};
     \node[refused] (ref) at (7.8, -4.4) {Refusé\\(\texttt{refused})};
+    \node[cancelled] (can) at (2.4, -4.4) {Annulé\\(\texttt{cancelled})};
 
     % Transitions
     \draw[trans] (init) -- (draft);
@@ -405,7 +408,11 @@ La figure~\ref{fig:statediag} présente la machine à états complète d'une ins
 
     \draw[trans] (mgr.south west) to[out=-145, in=25] node[lbl, pos=0.62, below=3pt, sloped] {Refus RH \textit{[motif oblig.]}} (ref.north east);
 
-    \draw[trans] (ref.west) -| node[lbl, pos=0.25, below=3pt] {\texttt{action\_reset\_to\_draft()}\\ \textit{(reprise par l'employé)}} (draft.south);
+    \draw[trans] (sub.south west) -- node[lbl, pos=0.48, above=2pt, sloped] {Annul. Emp./RH} (can.north east);
+    \draw[trans] (app.south) -- ++(0,-0.9) -| node[lbl, pos=0.25, below=2pt] {Annulation RH \textit{[motif oblig., recrédit solde]}} (can.south);
+    \draw[trans] (can.north) -- node[lbl, left=4pt] {\texttt{action\_reset\_to\_draft()}} (draft.south);
+
+    \draw[trans] (ref.south) -- ++(0,-0.45) -| node[lbl, pos=0.22, below=2pt] {\texttt{action\_reset\_to\_draft()}} (draft.south east);
 \end{tikzpicture}
 \caption{Diagramme d'États-Transitions d'une demande d'absence}
 \label{fig:statediag}
@@ -430,11 +437,12 @@ Couche & Fichier(s) & Responsabilité \\
 \midrule
 Squelette & \texttt{\_\_manifest\_\_.py}, \texttt{\_\_init\_\_.py} & Déclaration du module, dépendances (\texttt{hr}, \texttt{mail}), ordre de chargement XML/CSV. \\
 Modèles & \texttt{models/hr\_employee.py} & Extension (\texttt{\_inherit}) de \texttt{hr.employee} : date d'embauche, report, compteurs calculés. \\
- & \texttt{models/absence\_request.py} & Modèle \texttt{insea.absence.request} : champs, calculs, contraintes Python/SQL, workflow, verrouillage CRUD. \\
-Assistant & \texttt{wizard/refuse\_wizard.py} & \texttt{TransientModel} imposant un motif lors d'un refus. \\
-Sécurité & \texttt{security/security.xml}, \texttt{ir.model.access.csv} & 3 groupes hiérarchiques, droits CRUD et 4 règles d'enregistrement (\texttt{ir.rule}). \\
-Interfaces XML & \texttt{views/absence\_request\_views.xml}, \texttt{hr\_employee\_views.xml}, \texttt{menus.xml} & Vues Formulaire (statusbar, rubans, alertes), Liste, Recherche, Calendrier, Graphique, Pivot, onglet fiche employé, menus par rôle. \\
-Données \& Tests & \texttt{data/ir\_sequence\_data.xml}, \texttt{demo/demo\_data.xml}, \texttt{tests/test\_absence\_request.py} & Séquence \texttt{ABS/2026/00001}, jeu de démonstration (5 profils, 7 demandes) et 25 tests automatisés. \\
+ & \texttt{models/absence\_request.py} & Modèle \texttt{insea.absence.request} : champs, calculs, contraintes Python/SQL, workflow (dont annulation), rapport PDF, notifications \& cron. \\
+Assistants & \texttt{wizard/refuse\_wizard.py}, \texttt{cancel\_wizard.py} & \texttt{TransientModel} imposant un motif lors d'un refus ou d'une annulation. \\
+Rapport PDF & \texttt{report/absence\_request\_report.xml} & Modèle QWeb PDF générant le \textit{Titre de congé} ou le \textit{Bon d'autorisation de sortie} validé. \\
+Sécurité & \texttt{security/security.xml}, \texttt{ir.model.access.csv} & 3 groupes hiérarchiques, droits CRUD (modèles et assistants) et 4 règles d'enregistrement (\texttt{ir.rule}). \\
+Interfaces XML & \texttt{views/absence\_request\_views.xml}, \texttt{hr\_employee\_views.xml}, \texttt{menus.xml} & Vues Formulaire (statusbar, rubans, alertes, bouton PDF), Liste, Recherche, Calendrier, Graphique, Pivot, onglet fiche employé, menus par rôle. \\
+Données, Notif. \& Tests & \texttt{data/ir\_sequence\_data.xml}, \texttt{mail\_template\_data.xml}, \texttt{ir\_cron\_data.xml}, \texttt{demo/demo\_data.xml}, \texttt{tests/test\_absence\_request.py} & Séquence \texttt{ABS/2026/00001}, 5 modèles e-mail, tâche planifiée quotidienne de relance, jeu de démo et 30 tests automatisés. \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -457,6 +465,14 @@ La sécurité repose sur trois groupes hiérarchiques rattachés à la catégori
     \item \textbf{Responsable RH (\texttt{group\_absence\_hr})} : hérite de Manager et \texttt{hr.group\_hr\_user}.\\
     Règle : \texttt{[(1, '=', 1)]} -- accès global, validation finale, analyses et gestion des soldes.
 \end{enumerate}
+
+\subsection{Extensions fonctionnelles : Annulation, Rapport PDF QWeb et Notifications}
+Trois fonctionnalités complémentaires ont été intégrées pour couvrir le cycle de vie complet en entreprise :
+\begin{itemize}[itemsep=2pt]
+    \item \textbf{Workflow d'annulation (\texttt{cancelled}) :} un assistant dédié (\texttt{insea.absence.cancel.wizard}) impose la saisie d'un motif d'annulation. Un employé peut annuler sa propre demande tant qu'elle est à l'état \textit{Soumis}, puis la remettre en brouillon si besoin. Le Responsable RH peut annuler une demande même après validation (\textit{Validé N+1} ou \textit{Validé}) : dans le cas d'un congé payé validé, les jours déduits sont \textbf{automatiquement recrédités} sur le solde de l'employé, et le créneau redevient libre au planning.
+    \item \textbf{Rapport PDF imprimable (QWeb) :} le rapport \texttt{action\_report\_absence\_request} génère un document PDF officiel intitulé \textit{Titre de congé} ou \textit{Bon d'autorisation de sortie} selon la catégorie, incluant les coordonnées du collaborateur, la période, la durée, le solde de congés payés, l'historique horodaté des validations (N+1 et RH) ainsi que les emplacements de signature. Le bouton \textbf{Imprimer le titre (PDF)} n'est actif qu'une fois la demande validée.
+    \item \textbf{Notifications e-mail, activités et relances automatiques :} cinq modèles QWeb (\texttt{mail.template}) mettent en file d'attente des e-mails lors de la soumission (vers le N+1), de la validation finale, du refus, de l'annulation et des relances. Des activités Odoo (\textit{À faire}) sont planifiées automatiquement pour le N+1 à la soumission et pour les RH dès le passage en \textit{Validé N+1}. Enfin, une tâche planifiée quotidienne (\texttt{ir.cron} appelant \texttt{\_cron\_send\_reminders}) relance les validateurs au-delà de 48~h d'attente et les employés dont un justificatif obligatoire reste manquant (avec protection anti-doublon de 24~h).
+\end{itemize}
 
 % =============================================================================
 % 4. DÉMONSTRATION FONCTIONNELLE ET INTERFACES UTILISATEUR
@@ -553,12 +569,12 @@ Depuis \textit{Configuration $\rightarrow$ Soldes de congés} (figure~\ref{fig:h
 % =============================================================================
 \section{Tests Automatisés et Validation}
 
-Afin de garantir la fiabilité de chaque règle de gestion, une suite complète de \textbf{25 tests automatisés} (\texttt{TransactionCase}) a été développée dans \texttt{tests/test\_absence\_request.py} et exécutée dans le conteneur Odoo 18 via la commande :
+Afin de garantir la fiabilité de chaque règle de gestion, une suite complète de \textbf{30 tests automatisés} (\texttt{TransactionCase}) a été développée dans \texttt{tests/test\_absence\_request.py} et exécutée dans le conteneur Odoo 18 via la commande :
 \begin{tcolorbox}[infobox, title={Commande d'exécution des tests automatisés}]
-\small\texttt{docker compose exec -T odoo odoo -d insea\_db -i insea\_hr\_leave\_custom --test-enable --test-tags /insea\_hr\_leave\_custom --stop-after-init --db\_host db -r odoo -w odoo --http-port 8070}
+\small\texttt{docker compose exec -T odoo odoo -d test\_db -i insea\_hr\_leave\_custom --test-enable --test-tags /insea\_hr\_leave\_custom --stop-after-init --db\_host db -r odoo -w odoo --http-port 8070}
 \end{tcolorbox}
 
-L'ensemble des tests s'exécute sans aucune anomalie : \textbf{\color{customBorder} 0 failed, 0 error(s) of 25 tests} (tableau~\ref{tab:tests}).
+L'ensemble des tests s'exécute sans aucune anomalie : \textbf{\color{customBorder} 0 failed, 0 error(s) of 30 tests} (tableau~\ref{tab:tests}).
 
 \begin{table}[H]
 \centering
@@ -574,8 +590,9 @@ Autorisations & \texttt{test\_03} -- \texttt{06} & Durée $\leq 4\text{ h}$, pla
 Contrôles métier & \texttt{test\_07} -- \texttt{11} & Non-chevauchement, solde insuffisant, réservation des demandes en attente, prévenance 7 j, durées familiales. & \textbf{\color{customBorder} 5 / 5 OK} \\
 Circuit de validation & \texttt{test\_12} -- \texttt{21} & Validation finale N+1 (autorisation \& maladie 1 j), validation RH, blocage justificatif, assistant refus + notification, verrouillage post-soumission, interdiction d'auto-validation. & \textbf{\color{customBorder} 10 / 10 OK} \\
 Sécurité \& SQL & \texttt{test\_22} -- \texttt{25} & Record Rules (Employé / Manager / RH), interdiction de créer pour un collègue, lecture du solde propre, contrainte SQL \texttt{check\_dates\_order}. & \textbf{\color{customBorder} 4 / 4 OK} \\
+Annulation, PDF \& Notif. & \texttt{test\_26} -- \texttt{30} & Annulation employé/RH, recrédit automatique du solde, garde \& rendu QWeb PDF, mise en file d'e-mails, cron de relance (>48~h) et anti-doublon 24~h. & \textbf{\color{customBorder} 5 / 5 OK} \\
 \midrule
-\textbf{Total} & \textbf{25 tests} & \textbf{Couverture intégrale du cahier des charges} & \textbf{\color{customBorder} 25 / 25 OK} \\
+\textbf{Total} & \textbf{30 tests} & \textbf{Couverture intégrale du cahier des charges et des extensions} & \textbf{\color{customBorder} 30 / 30 OK} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -585,13 +602,13 @@ Sécurité \& SQL & \texttt{test\_22} -- \texttt{25} & Record Rules (Employé / 
 % =============================================================================
 \section{Conclusion et Perspectives}
 
-Le module \texttt{insea\_hr\_leave\_custom} répond intégralement aux besoins exprimés par la société \textbf{Lambda} pour la dématérialisation de ses autorisations d'absence et de ses congés. L'architecture retenue tire parti de la puissance du framework Odoo 18 (ORM, héritage par extension, mixins \texttt{mail}, sécurité multi-niveaux et vues analytiques) tout en assurant une maintenance propre et testée automatiquement.
+Le module \texttt{insea\_hr\_leave\_custom} répond intégralement aux besoins exprimés par la société \textbf{Lambda} pour la dématérialisation de ses autorisations d'absence et de ses congés, tout en intégrant un workflow complet d'annulation avec recrédit automatique du solde, la génération de titres officiels au format PDF (QWeb) et un dispositif complet de notifications (modèles e-mail, activités et relances planifiées). L'architecture retenue tire parti de la puissance du framework Odoo 18 (ORM, héritage par extension, mixins \texttt{mail}, rapports QWeb, tâches \texttt{ir.cron}, sécurité multi-niveaux et vues analytiques) tout en assurant une maintenance propre et testée automatiquement.
 
 En perspective d'évolution, le module pourrait être enrichi par :
 \begin{itemize}[itemsep=2pt]
     \item l'export mensuel automatique vers un module de paie (Odoo Payroll) des absences validées ;
     \item l'ajout d'une délégation temporaire de validation en cas d'absence du manager N+1 ;
-    \item la génération de rapports PDF individuels d'attestation de congé via QWeb.
+    \item la paramétrisation des seuils métier (plafonds horaires, délai de prévenance, report annuel) depuis \textit{Configuration $\rightarrow$ Paramètres}.
 \end{itemize}
 
 \end{document}
