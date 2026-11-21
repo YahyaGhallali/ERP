@@ -1,0 +1,320 @@
+// =============================================================================
+// INSEA - Absences & Congés : Thème UI moderne & professionnel (Odoo 18)
+// Strictement scopé aux vues du module (.o_insea_*) pour ne pas impacter Odoo.
+// =============================================================================
+
+$insea-navy: #1b365d;
+$insea-teal: #0e7490;
+$insea-surface: #f8fafc;
+$insea-border: #e2e8f0;
+$insea-text: #1e293b;
+$insea-muted: #64748b;
+$insea-success: #059669;
+$insea-warning: #d97706;
+$insea-danger: #dc2626;
+$insea-info: #0284c7;
+
+// -----------------------------------------------------------------------------
+// 1. VUE FORMULAIRE (.o_insea_absence_form)
+// -----------------------------------------------------------------------------
+.o_insea_absence_form {
+    .o_form_sheet_bg {
+        background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
+    }
+
+    .o_form_sheet {
+        border: 1px solid $insea-border !important;
+        border-radius: 12px !important;
+        box-shadow: 0 6px 24px rgba(27, 54, 93, 0.06) !important;
+        padding: 28px 32px !important;
+    }
+
+    // En-tête de la demande (référence + titre)
+    .insea-form-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid $insea-border;
+
+        .insea-hero-ref {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: $insea-navy;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .insea-hero-sub {
+            font-size: 0.85rem;
+            color: $insea-muted;
+            margin-top: 2px;
+        }
+    }
+
+    // Bandeau KPI (cartes métriques)
+    .insea-kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .insea-kpi-card {
+        background: $insea-surface;
+        border: 1px solid $insea-border;
+        border-top: 3px solid $insea-navy;
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: box-shadow 0.15s ease;
+
+        &:hover {
+            box-shadow: 0 3px 12px rgba(27, 54, 93, 0.08);
+        }
+
+        &.is-teal {
+            border-top-color: $insea-teal;
+        }
+
+        &.is-success {
+            border-top-color: $insea-success;
+        }
+
+        &.is-warning {
+            border-top-color: $insea-warning;
+        }
+
+        .insea-kpi-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: $insea-muted;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            i {
+                color: $insea-teal;
+            }
+        }
+
+        .insea-kpi-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: $insea-navy;
+            line-height: 1.3;
+
+            .o_field_widget {
+                margin-bottom: 0 !important;
+                font-weight: 700;
+                color: inherit;
+            }
+        }
+    }
+
+    // Cartes de sections dans le formulaire
+    .insea-section-grid {
+        align-items: stretch;
+
+        .o_inner_group {
+            background: $insea-surface;
+            border: 1px solid $insea-border;
+            border-radius: 10px;
+            padding: 16px 18px !important;
+            height: 100%;
+            align-content: start;
+        }
+
+        .o_horizontal_separator {
+            color: $insea-navy !important;
+            font-size: 0.82rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid $insea-border;
+            padding-bottom: 6px;
+            margin-bottom: 12px !important;
+        }
+    }
+
+    // Alertes raffinées avec bordure gauche
+    .alert {
+        border-radius: 8px;
+        border: 1px solid transparent;
+        border-left-width: 4px;
+        font-size: 0.9rem;
+        padding: 12px 16px;
+
+        &.alert-warning {
+            background-color: #fffbeb;
+            border-color: #fde68a;
+            border-left-color: $insea-warning;
+            color: #92400e;
+        }
+
+        &.alert-danger {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            border-left-color: $insea-danger;
+            color: #991b1b;
+        }
+
+        &.alert-secondary {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+            border-left-color: $insea-muted;
+            color: #334155;
+        }
+    }
+
+    // Onglets du notebook
+    .o_notebook {
+        margin-top: 18px;
+
+        .nav-tabs .nav-link.active {
+            color: $insea-navy;
+            font-weight: 600;
+            border-top: 2px solid $insea-teal;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 2. VUE KANBAN (.o_insea_absence_kanban)
+// -----------------------------------------------------------------------------
+.o_insea_absence_kanban {
+    .o_kanban_record.o_kanban_ghost {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    .o_kanban_record:not(.o_kanban_ghost) {
+        border: 1px solid $insea-border !important;
+        border-radius: 10px !important;
+        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        overflow: hidden;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(27, 54, 93, 0.10);
+        }
+    }
+
+    .insea-kanban-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 14px;
+        border-left: 4px solid $insea-muted;
+        height: 100%;
+
+        &.state-submitted { border-left-color: $insea-info; }
+        &.state-manager_approved { border-left-color: $insea-warning; }
+        &.state-approved { border-left-color: $insea-success; }
+        &.state-refused { border-left-color: $insea-danger; }
+        &.state-cancelled { border-left-color: #94a3b8; }
+    }
+
+    .insea-kanban-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+
+        .insea-kanban-ref {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: $insea-navy;
+        }
+    }
+
+    .insea-kanban-employee {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .insea-kanban-emp-name {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: $insea-text;
+            line-height: 1.2;
+        }
+
+        .insea-kanban-dept {
+            font-size: 0.78rem;
+            color: $insea-muted;
+        }
+    }
+
+    .insea-kanban-meta {
+        background: $insea-surface;
+        border: 1px solid $insea-border;
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.82rem;
+        color: $insea-text;
+
+        i {
+            color: $insea-teal;
+            width: 15px;
+            text-align: center;
+            margin-right: 4px;
+        }
+    }
+
+    .insea-kanban-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 6px;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.8rem;
+
+        .insea-duration-pill {
+            background: rgba(14, 116, 144, 0.1);
+            color: $insea-teal;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 3. VUES LISTE (.o_insea_absence_list & .o_insea_balance_list)
+// -----------------------------------------------------------------------------
+.o_insea_absence_list,
+.o_insea_balance_list {
+    .o_list_table {
+        thead th {
+            background-color: #f1f5f9 !important;
+            color: $insea-navy !important;
+            font-weight: 700 !important;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-bottom: 2px solid $insea-border !important;
+        }
+
+        tbody tr {
+            transition: background-color 0.12s ease;
+
+            &:hover {
+                background-color: rgba(14, 116, 144, 0.04) !important;
+            }
+        }
+    }
+}

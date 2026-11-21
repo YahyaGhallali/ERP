@@ -36,6 +36,11 @@ Validation RH, et droits d'accès par profil (Employé, Manager, RH, Admin).
     'demo': [
         'demo/demo_data.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'insea_hr_leave_custom/static/src/scss/insea_absence.scss',
+        ],
+    },
     'application': True,
     'installable': True,
 }

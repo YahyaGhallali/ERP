@@ -7,7 +7,7 @@
         <field name="name">insea.absence.request.form</field>
         <field name="model">insea.absence.request</field>
         <field name="arch" type="xml">
-            <form string="Demande d'absence">
+            <form string="Demande d'absence" class="o_insea_absence_form">
                 <header>
                     <button name="action_submit" type="object" string="Soumettre"
                             class="oe_highlight" invisible="state != 'draft'" data-hotkey="s"/>
@@ -42,15 +42,18 @@
 
                     <div class="alert alert-warning" role="alert"
                          invisible="not requires_attachment or has_attachment or state in ('approved', 'refused', 'cancelled')">
+                        <i class="fa fa-exclamation-triangle me-2" title="Alerte"/>
                         <strong>Justificatif obligatoire :</strong>
                         cette demande ne pourra pas être validée tant qu'un fichier
                         (certificat médical, acte d'état civil...) n'aura pas été joint.
                     </div>
                     <div class="alert alert-danger" role="alert" invisible="state != 'refused'">
+                        <i class="fa fa-times-circle me-2" title="Refusé"/>
                         <strong>Demande refusée</strong> par <field name="refused_by_id" readonly="1" class="d-inline"/> :
                         <field name="refusal_reason" readonly="1" class="d-inline"/>
                     </div>
                     <div class="alert alert-secondary" role="alert" invisible="state != 'cancelled'">
+                        <i class="fa fa-ban me-2" title="Annulé"/>
                         <strong>Demande annulée</strong> par <field name="cancelled_by_id" readonly="1" class="d-inline"/> :
                         <field name="cancel_reason" readonly="1" class="d-inline"/>
                     </div>
@@ -62,11 +65,56 @@
                     <widget name="web_ribbon" title="Annulé" bg_color="text-bg-secondary"
                             invisible="state != 'cancelled'"/>
 
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                    <div class="insea-form-hero">
+                        <div>
+                            <div class="insea-hero-ref">
+                                <field name="name" readonly="1"/>
+                            </div>
+                            <div class="insea-hero-sub" invisible="not period_display">
+                                <i class="fa fa-calendar me-1" title="Période"/>
+                                <field name="period_display" readonly="1" class="d-inline"/>
+                            </div>
+                        </div>
                     </div>
 
-                    <group>
+                    <!-- Bandeau KPI -->
+                    <div class="insea-kpi-strip">
+                        <div class="insea-kpi-card is-teal">
+                            <span class="insea-kpi-label">
+                                <i class="fa fa-clock-o" title="Durée"/> Durée calculée
+                            </span>
+                            <div class="insea-kpi-value">
+                                <field name="duration_display" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="insea-kpi-card is-success" invisible="not impacts_balance">
+                            <span class="insea-kpi-label">
+                                <i class="fa fa-check-circle" title="Solde"/> Solde actuel (j)
+                            </span>
+                            <div class="insea-kpi-value">
+                                <field name="employee_leave_balance" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="insea-kpi-card is-warning" invisible="not impacts_balance">
+                            <span class="insea-kpi-label">
+                                <i class="fa fa-hourglass-half" title="En attente"/> En attente (j)
+                            </span>
+                            <div class="insea-kpi-value">
+                                <field name="employee_leave_pending" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="insea-kpi-card">
+                            <span class="insea-kpi-label">
+                                <i class="fa fa-shield" title="Validation"/> Validation RH
+                            </span>
+                            <div class="insea-kpi-value">
+                                <span invisible="not requires_hr_validation" class="badge text-bg-info fs-6">Requise (N+1 + RH)</span>
+                                <span invisible="requires_hr_validation" class="badge text-bg-secondary fs-6">N+1 uniquement</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <group class="insea-section-grid">
                         <group string="Demandeur">
                             <field name="employee_id" readonly="state != 'draft'"
                                    options="{'no_create': True}"/>
@@ -83,28 +131,23 @@
                                    invisible="category != 'exceptional'"
                                    required="category == 'exceptional'"
                                    readonly="state != 'draft'"/>
-                            <field name="requires_hr_validation" readonly="1"/>
+                            <field name="requires_hr_validation" invisible="1"/>
                         </group>
                     </group>
 
-                    <group string="Période">
-                        <group invisible="category != 'authorization'">
+                    <group class="insea-section-grid mt-3">
+                        <group string="Période de l'autorisation" invisible="category != 'authorization'">
                             <field name="authorization_date"
                                    required="category == 'authorization'"
                                    readonly="state != 'draft'"/>
                             <field name="hour_from" widget="float_time" readonly="state != 'draft'"/>
                             <field name="hour_to" widget="float_time" readonly="state != 'draft'"/>
                         </group>
-                        <group invisible="category == 'authorization'">
+                        <group string="Période du congé" invisible="category == 'authorization'">
                             <field name="date_from" required="category != 'authorization'"
                                    readonly="state != 'draft'"/>
                             <field name="date_to" required="category != 'authorization'"
                                    readonly="state != 'draft'"/>
-                        </group>
-                        <group>
-                            <field name="duration_display"/>
-                            <field name="employee_leave_balance" invisible="not impacts_balance"/>
-                            <field name="employee_leave_pending" invisible="not impacts_balance"/>
                         </group>
                     </group>
 
@@ -151,25 +194,99 @@
     </record>
 
     <!-- =====================================================================
+         VUE KANBAN (cartes visuelles modernes)
+         ===================================================================== -->
+    <record id="view_absence_request_kanban" model="ir.ui.view">
+        <field name="name">insea.absence.request.kanban</field>
+        <field name="model">insea.absence.request</field>
+        <field name="arch" type="xml">
+            <kanban class="o_insea_absence_kanban" default_order="start_datetime desc">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="category"/>
+                <field name="period_display"/>
+                <field name="duration_display"/>
+                <field name="state"/>
+                <field name="has_attachment"/>
+                <field name="requires_attachment"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="insea-kanban-card state-{{ record.state.raw_value }}">
+                            <div class="insea-kanban-header">
+                                <span class="insea-kanban-ref">
+                                    <field name="name"/>
+                                </span>
+                                <field name="state" widget="label_selection"
+                                       options="{'classes': {'draft': 'secondary', 'submitted': 'info', 'manager_approved': 'warning', 'approved': 'success', 'refused': 'danger', 'cancelled': 'secondary'}}"/>
+                            </div>
+
+                            <div class="insea-kanban-employee">
+                                <field name="employee_id" widget="many2one_avatar_employee"/>
+                                <div>
+                                    <div class="insea-kanban-emp-name">
+                                        <field name="employee_id"/>
+                                    </div>
+                                    <div class="insea-kanban-dept" t-if="record.department_id.value">
+                                        <field name="department_id"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="insea-kanban-meta">
+                                <div>
+                                    <i class="fa fa-tag" title="Type"/>
+                                    <field name="category"/>
+                                </div>
+                                <div t-if="record.period_display.value">
+                                    <i class="fa fa-calendar" title="Période"/>
+                                    <field name="period_display"/>
+                                </div>
+                            </div>
+
+                            <div class="insea-kanban-footer">
+                                <span class="insea-duration-pill">
+                                    <i class="fa fa-clock-o me-1" title="Durée"/>
+                                    <field name="duration_display"/>
+                                </span>
+                                <span t-if="record.has_attachment.raw_value" class="text-success" title="Justificatif joint">
+                                    <i class="fa fa-paperclip me-1"/>Justificatif
+                                </span>
+                                <span t-elif="record.requires_attachment.raw_value" class="text-warning" title="Justificatif manquant">
+                                    <i class="fa fa-exclamation-triangle me-1"/>Justif. requis
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- =====================================================================
          VUE LISTE (arborescence)
          ===================================================================== -->
     <record id="view_absence_request_list" model="ir.ui.view">
         <field name="name">insea.absence.request.list</field>
         <field name="model">insea.absence.request</field>
         <field name="arch" type="xml">
-            <list string="Demandes d'absence"
+            <list string="Demandes d'absence" class="o_insea_absence_list"
                   decoration-muted="state in ('draft', 'cancelled')"
                   decoration-info="state == 'submitted'"
                   decoration-warning="state == 'manager_approved'"
                   decoration-success="state == 'approved'"
                   decoration-danger="state == 'refused'">
-                <field name="name"/>
+                <field name="name" class="fw-bold"/>
                 <field name="employee_id" widget="many2one_avatar_employee"/>
                 <field name="department_id" optional="hide"/>
-                <field name="category"/>
+                <field name="category" widget="badge"
+                       decoration-info="category == 'authorization'"
+                       decoration-primary="category == 'paid'"
+                       decoration-warning="category == 'exceptional'"
+                       decoration-danger="category == 'sick'"/>
                 <field name="period_display"/>
                 <field name="start_datetime" string="Début" optional="hide"/>
-                <field name="duration_display"/>
+                <field name="duration_display" class="fw-semibold"/>
                 <field name="duration_days" sum="Total jours" optional="hide"/>
                 <field name="duration_hours" sum="Total heures" optional="hide"/>
                 <field name="manager_id" optional="hide"/>
@@ -291,7 +408,7 @@
     <record id="action_absence_request_my" model="ir.actions.act_window">
         <field name="name">Mes demandes</field>
         <field name="res_model">insea.absence.request</field>
-        <field name="view_mode">list,form,calendar</field>
+        <field name="view_mode">kanban,list,form,calendar</field>
         <field name="domain">[('employee_id.user_id', '=', uid)]</field>
         <field name="context">{}</field>
         <field name="help" type="html">
@@ -303,7 +420,7 @@
     <record id="action_absence_request_to_approve" model="ir.actions.act_window">
         <field name="name">Demandes à valider (N+1)</field>
         <field name="res_model">insea.absence.request</field>
-        <field name="view_mode">list,form,calendar</field>
+        <field name="view_mode">kanban,list,form,calendar</field>
         <field name="context">{'search_default_filter_to_approve': 1, 'search_default_filter_my_team': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Aucune demande en attente</p>
@@ -313,14 +430,14 @@
     <record id="action_absence_request_hr" model="ir.actions.act_window">
         <field name="name">Validation RH</field>
         <field name="res_model">insea.absence.request</field>
-        <field name="view_mode">list,form,calendar</field>
+        <field name="view_mode">kanban,list,form,calendar</field>
         <field name="context">{'search_default_filter_to_approve_hr': 1}</field>
     </record>
 
     <record id="action_absence_request_all" model="ir.actions.act_window">
         <field name="name">Toutes les demandes</field>
         <field name="res_model">insea.absence.request</field>
-        <field name="view_mode">list,form,calendar,pivot,graph</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph</field>
     </record>
 
     <record id="action_absence_request_calendar" model="ir.actions.act_window">
