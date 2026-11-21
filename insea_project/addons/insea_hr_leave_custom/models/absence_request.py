@@ -49,6 +49,7 @@ ACTIVE_STATES = ('submitted', 'manager_approved', 'approved')
 WORKFLOW_FIELDS = {
     'state', 'manager_user_id', 'manager_date', 'hr_user_id', 'hr_date',
     'refusal_reason', 'refused_by_id', 'refusal_date', 'submit_date',
+    'cancel_reason', 'cancelled_by_id', 'cancel_date', 'last_reminder_date',
 }
 
 
@@ -127,6 +128,7 @@ class InseaAbsenceRequest(models.Model):
         ('manager_approved', "Validé N+1 (attente RH)"),
         ('approved', "Validé"),
         ('refused', "Refusé"),
+        ('cancelled', "Annulé"),
     ], string="Statut", default='draft', required=True, readonly=True,
         copy=False, tracking=True, index=True)
     submit_date = fields.Datetime(string="Soumis le", readonly=True, copy=False)
@@ -140,6 +142,11 @@ class InseaAbsenceRequest(models.Model):
     refused_by_id = fields.Many2one(
         'res.users', string="Refusé par", readonly=True, copy=False)
     refusal_date = fields.Datetime(string="Date du refus", readonly=True, copy=False)
+    cancel_reason = fields.Text(string="Motif d'annulation", readonly=True, copy=False)
+    cancelled_by_id = fields.Many2one(
+        'res.users', string="Annulé par", readonly=True, copy=False)
+    cancel_date = fields.Datetime(string="Date d'annulation", readonly=True, copy=False)
+    last_reminder_date = fields.Datetime(string="Dernier rappel", readonly=True, copy=False)
 
     # =========================================================================
     # 3. CHAMPS CALCULÉS
@@ -178,6 +185,7 @@ class InseaAbsenceRequest(models.Model):
     can_manager_approve = fields.Boolean(compute='_compute_user_rights')
     can_hr_approve = fields.Boolean(compute='_compute_user_rights')
     can_refuse = fields.Boolean(compute='_compute_user_rights')
+    can_cancel = fields.Boolean(compute='_compute_user_rights')
 
     @api.depends('category', 'hour_from', 'hour_to', 'date_from', 'date_to',
                  'authorization_date', 'employee_id')
@@ -278,6 +286,10 @@ class InseaAbsenceRequest(models.Model):
                                        and (is_manager or is_hr))
             req.can_hr_approve = (req.state == 'manager_approved' and not own and is_hr)
             req.can_refuse = req.can_manager_approve or req.can_hr_approve
+            req.can_cancel = (
+                (own and req.state == 'submitted')
+                or (is_hr and req.state in ('submitted', 'manager_approved', 'approved'))
+            )
 
     # =========================================================================
     # 4. ONCHANGE & CRUD
@@ -328,7 +340,7 @@ class InseaAbsenceRequest(models.Model):
                 # Un justificatif peut encore être ajouté tant que la demande
                 # est en cours de validation ; le reste est verrouillé.
                 if business_fields == {'attachment_ids'}:
-                    locked = self.filtered(lambda r: r.state in ('approved', 'refused'))
+                    locked = self.filtered(lambda r: r.state in ('approved', 'refused', 'cancelled'))
                 else:
                     locked = self.filtered(lambda r: r.state != 'draft')
                 if locked and business_fields:
@@ -519,10 +531,12 @@ class InseaAbsenceRequest(models.Model):
                            type=dict(self._fields['category'].selection)[req.category],
                            dur=req.duration_display))
             req.message_post(body=_("Demande soumise pour validation."))
+            req._send_notification_email('insea_hr_leave_custom.mail_template_absence_submitted')
         return True
 
     def action_manager_approve(self):
         """Soumis -> Validé N+1 (ou Validé si autorisation de sortie)."""
+        hr_group = self.env.ref('insea_hr_leave_custom.group_absence_hr', raise_if_not_found=False)
         for req in self:
             if not req.can_manager_approve:
                 raise AccessError(_(
@@ -542,10 +556,21 @@ class InseaAbsenceRequest(models.Model):
             req.activity_feedback(['mail.mail_activity_data_todo'])
             if new_state == 'approved':
                 req._notify_employee(_("Votre demande %s a été validée par votre responsable.", req.name))
+                req._send_notification_email('insea_hr_leave_custom.mail_template_absence_approved')
             else:
                 req._notify_employee(_(
                     "Votre demande %s a été validée par votre responsable ; "
                     "elle est transmise au service RH.", req.name))
+                if hr_group:
+                    hr_users = hr_group.sudo().users.filtered(
+                        lambda u: u != req.employee_id.user_id and not u.share)
+                    for hr_user in hr_users:
+                        req.activity_schedule(
+                            'mail.mail_activity_data_todo', user_id=hr_user.id,
+                            summary=_("Validation RH requise"),
+                            note=_("%(emp)s : %(type)s (%(dur)s)", emp=req.employee_id.name,
+                                   type=dict(self._fields['category'].selection)[req.category],
+                                   dur=req.duration_display))
         return True
 
     def action_hr_approve(self):
@@ -563,11 +588,13 @@ class InseaAbsenceRequest(models.Model):
             'hr_date': fields.Datetime.now(),
         })
         for req in self:
+            req.activity_feedback(['mail.mail_activity_data_todo'])
             msg = _("Votre demande %s a été validée par le service RH.", req.name)
             if req.impacts_balance:
                 msg += " " + _("%s jour(s) ont été déduits de votre solde.",
                                f"{req.duration_days:g}")
             req._notify_employee(msg)
+            req._send_notification_email('insea_hr_leave_custom.mail_template_absence_approved')
         return True
 
     def action_open_refuse_wizard(self):
@@ -602,13 +629,60 @@ class InseaAbsenceRequest(models.Model):
             req._notify_employee(_(
                 "Votre demande %(ref)s a été refusée.\nMotif : %(reason)s",
                 ref=req.name, reason=reason))
+            req._send_notification_email('insea_hr_leave_custom.mail_template_absence_refused')
+        return True
+
+    def action_open_cancel_wizard(self):
+        """Ouvre l'assistant de saisie du motif d'annulation (obligatoire)."""
+        self.ensure_one()
+        if not self.can_cancel:
+            raise AccessError(_("Vous n'êtes pas autorisé à annuler cette demande."))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Motif d'annulation"),
+            'res_model': 'insea.absence.cancel.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_request_id': self.id},
+        }
+
+    def _do_cancel(self, reason):
+        """Appelé par l'assistant : Soumis / Validé N+1 / Validé -> Annulé.
+        Si un congé payé validé est annulé, le solde est automatiquement recrédité."""
+        if not reason or not reason.strip():
+            raise UserError(_("Le motif d'annulation est obligatoire."))
+        prev_states = {}
+        for req in self:
+            if not req.can_cancel:
+                raise AccessError(_("Vous n'êtes pas autorisé à annuler cette demande."))
+            prev_states[req.id] = req.state
+        self.with_context(insea_workflow=True).write({
+            'state': 'cancelled',
+            'cancel_reason': reason,
+            'cancelled_by_id': self.env.user.id,
+            'cancel_date': fields.Datetime.now(),
+        })
+        for req in self:
+            req.activity_unlink(['mail.mail_activity_data_todo'])
+            msg = _(
+                "La demande %(ref)s a été annulée par %(user)s.\nMotif : %(reason)s",
+                ref=req.name, user=self.env.user.name, reason=reason)
+            if prev_states[req.id] == 'approved' and req.impacts_balance:
+                msg += " " + _("%s jour(s) ont été recrédités sur le solde de congés payés.",
+                               f"{req.duration_days:g}")
+            partners = (req.employee_id.user_id.partner_id
+                        | req.sudo().employee_id.parent_id.user_id.partner_id)
+            req.message_post(
+                body=msg, message_type='comment', subtype_xmlid='mail.mt_comment',
+                partner_ids=partners.ids if partners else [])
+            req._send_notification_email('insea_hr_leave_custom.mail_template_absence_cancelled')
         return True
 
     def action_reset_to_draft(self):
-        """Refusé -> Brouillon : l'employé peut corriger et soumettre à nouveau."""
+        """Refusé / Annulé -> Brouillon : l'employé peut corriger et soumettre à nouveau."""
         for req in self:
-            if req.state != 'refused':
-                raise UserError(_("Seule une demande refusée peut être remise en brouillon."))
+            if req.state not in ('refused', 'cancelled'):
+                raise UserError(_("Seule une demande refusée ou annulée peut être remise en brouillon."))
             if req.employee_id.user_id != self.env.user and not self.env.user.has_group(
                     'insea_hr_leave_custom.group_absence_hr'):
                 raise AccessError(_("Seul l'employé concerné peut reprendre sa demande."))
@@ -616,11 +690,23 @@ class InseaAbsenceRequest(models.Model):
             'state': 'draft',
             'manager_user_id': False, 'manager_date': False,
             'hr_user_id': False, 'hr_date': False,
+            'cancel_reason': False, 'cancelled_by_id': False, 'cancel_date': False,
         })
         return True
 
+    def action_print_report(self):
+        """Imprime le titre de congé / bon de sortie au format PDF (QWeb)."""
+        self.ensure_one()
+        if self.state != 'approved':
+            raise UserError(_(
+                "Le titre de congé / bon de sortie ne peut être imprimé "
+                "qu'une fois la demande validée."))
+        return self.env.ref(
+            'insea_hr_leave_custom.action_report_absence_request'
+        ).report_action(self)
+
     # =========================================================================
-    # 7. UTILITAIRES
+    # 7. UTILITAIRES & NOTIFICATIONS
     # =========================================================================
     def _link_attachments(self):
         """Rattache les justificatifs à la demande (res_model/res_id) : leurs
@@ -630,12 +716,65 @@ class InseaAbsenceRequest(models.Model):
                 'res_model': self._name, 'res_id': req.id})
 
     def _notify_employee(self, body):
-        """Notification de l'employé (boîte de réception Odoo + e-mail)."""
+        """Notification de l'employé (boîte de réception Odoo + chatter)."""
         self.ensure_one()
         partner = self.employee_id.user_id.partner_id
         self.message_post(
             body=body, message_type='comment', subtype_xmlid='mail.mt_comment',
             partner_ids=partner.ids if partner else [])
+
+    def _send_notification_email(self, template_xmlid):
+        """Met en file d'attente un e-mail basé sur un modèle QWeb mail.template."""
+        self.ensure_one()
+        template = self.env.ref(template_xmlid, raise_if_not_found=False)
+        if template:
+            template.sudo().send_mail(self.id, force_send=False)
+
+    @api.model
+    def _cron_send_reminders(self):
+        """Tâche planifiée quotidienne :
+          1. Relance les demandes en attente de validation depuis plus de 48 h.
+          2. Relance les employés dont le justificatif obligatoire est manquant.
+        """
+        now = fields.Datetime.now()
+        cutoff_48h = now - timedelta(hours=48)
+        cutoff_24h = now - timedelta(hours=24)
+
+        # 1. Demandes en attente de validation (> 48 h)
+        pending = self.search([
+            ('state', 'in', ('submitted', 'manager_approved')),
+            '|', ('last_reminder_date', '=', False),
+                 ('last_reminder_date', '<=', cutoff_24h),
+        ])
+        for req in pending:
+            ref_date = req.submit_date if req.state == 'submitted' else (req.manager_date or req.submit_date)
+            if ref_date and ref_date <= cutoff_48h:
+                partners = req.sudo().employee_id.parent_id.user_id.partner_id
+                if req.state == 'manager_approved':
+                    hr_group = self.env.ref('insea_hr_leave_custom.group_absence_hr', raise_if_not_found=False)
+                    if hr_group:
+                        partners = hr_group.sudo().users.mapped('partner_id')
+                req.message_post(
+                    body=_("Rappel automatique : la demande %s est en attente de validation depuis plus de 48 h.", req.name),
+                    message_type='comment', subtype_xmlid='mail.mt_comment',
+                    partner_ids=partners.ids if partners else [])
+                req._send_notification_email('insea_hr_leave_custom.mail_template_absence_reminder')
+                req.with_context(insea_workflow=True).write({'last_reminder_date': now})
+
+        # 2. Justificatifs obligatoires manquants sur demandes actives
+        missing_docs = self.search([
+            ('state', 'in', ('submitted', 'manager_approved')),
+            ('requires_attachment', '=', True),
+            ('attachment_ids', '=', False),
+            '|', ('last_reminder_date', '=', False),
+                 ('last_reminder_date', '<=', cutoff_24h),
+        ])
+        for req in missing_docs:
+            req._notify_employee(_(
+                "Rappel automatique : merci de joindre le justificatif obligatoire "
+                "pour votre demande %s afin de permettre sa validation.", req.name))
+            req.with_context(insea_workflow=True).write({'last_reminder_date': now})
+        return True
 
     @api.model
     def _local_to_utc(self, day, hours, tz_name):

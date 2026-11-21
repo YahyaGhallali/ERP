@@ -20,8 +20,12 @@
                     <button name="action_open_refuse_wizard" type="object" string="Refuser"
                             invisible="not can_refuse"
                             groups="insea_hr_leave_custom.group_absence_manager" data-hotkey="r"/>
+                    <button name="action_open_cancel_wizard" type="object" string="Annuler la demande"
+                            invisible="not can_cancel" data-hotkey="x"/>
+                    <button name="action_print_report" type="object" string="Imprimer le titre (PDF)"
+                            class="btn-primary" invisible="state != 'approved'" data-hotkey="p"/>
                     <button name="action_reset_to_draft" type="object" string="Remettre en brouillon"
-                            invisible="state != 'refused'"/>
+                            invisible="state not in ('refused', 'cancelled')"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,submitted,manager_approved,approved"/>
                 </header>
@@ -30,13 +34,14 @@
                     <field name="can_manager_approve" invisible="1"/>
                     <field name="can_hr_approve" invisible="1"/>
                     <field name="can_refuse" invisible="1"/>
+                    <field name="can_cancel" invisible="1"/>
                     <field name="requires_attachment" invisible="1"/>
                     <field name="has_attachment" invisible="1"/>
                     <field name="impacts_balance" invisible="1"/>
                     <field name="company_id" invisible="1"/>
 
                     <div class="alert alert-warning" role="alert"
-                         invisible="not requires_attachment or has_attachment or state in ('approved', 'refused')">
+                         invisible="not requires_attachment or has_attachment or state in ('approved', 'refused', 'cancelled')">
                         <strong>Justificatif obligatoire :</strong>
                         cette demande ne pourra pas être validée tant qu'un fichier
                         (certificat médical, acte d'état civil...) n'aura pas été joint.
@@ -45,11 +50,17 @@
                         <strong>Demande refusée</strong> par <field name="refused_by_id" readonly="1" class="d-inline"/> :
                         <field name="refusal_reason" readonly="1" class="d-inline"/>
                     </div>
+                    <div class="alert alert-secondary" role="alert" invisible="state != 'cancelled'">
+                        <strong>Demande annulée</strong> par <field name="cancelled_by_id" readonly="1" class="d-inline"/> :
+                        <field name="cancel_reason" readonly="1" class="d-inline"/>
+                    </div>
 
                     <widget name="web_ribbon" title="Validé" bg_color="text-bg-success"
                             invisible="state != 'approved'"/>
                     <widget name="web_ribbon" title="Refusé" bg_color="text-bg-danger"
                             invisible="state != 'refused'"/>
+                    <widget name="web_ribbon" title="Annulé" bg_color="text-bg-secondary"
+                            invisible="state != 'cancelled'"/>
 
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
@@ -102,7 +113,7 @@
                             <group>
                                 <field name="attachment_ids" widget="many2many_binary"
                                        string="Pièces justificatives"
-                                       readonly="state in ('approved', 'refused')"/>
+                                       readonly="state in ('approved', 'refused', 'cancelled')"/>
                                 <field name="description" readonly="state != 'draft'"
                                        placeholder="Précisions éventuelles pour votre responsable..."/>
                             </group>
@@ -125,6 +136,11 @@
                                     <field name="refusal_date"/>
                                     <field name="refusal_reason"/>
                                 </group>
+                                <group string="Annulation" invisible="state != 'cancelled'">
+                                    <field name="cancelled_by_id"/>
+                                    <field name="cancel_date"/>
+                                    <field name="cancel_reason"/>
+                                </group>
                             </group>
                         </page>
                     </notebook>
@@ -142,7 +158,7 @@
         <field name="model">insea.absence.request</field>
         <field name="arch" type="xml">
             <list string="Demandes d'absence"
-                  decoration-muted="state == 'draft'"
+                  decoration-muted="state in ('draft', 'cancelled')"
                   decoration-info="state == 'submitted'"
                   decoration-warning="state == 'manager_approved'"
                   decoration-success="state == 'approved'"
@@ -159,6 +175,7 @@
                 <field name="manager_id" optional="hide"/>
                 <field name="has_attachment" string="Justif." widget="boolean" optional="show"/>
                 <field name="state" widget="badge"
+                       decoration-muted="state == 'cancelled'"
                        decoration-info="state == 'submitted'"
                        decoration-warning="state == 'manager_approved'"
                        decoration-success="state == 'approved'"
@@ -193,6 +210,8 @@
                         domain="[('state', '=', 'approved')]"/>
                 <filter name="filter_refused" string="Refusées"
                         domain="[('state', '=', 'refused')]"/>
+                <filter name="filter_cancelled" string="Annulées"
+                        domain="[('state', '=', 'cancelled')]"/>
                 <separator/>
                 <filter name="filter_authorization" string="Autorisations de sortie"
                         domain="[('category', '=', 'authorization')]"/>

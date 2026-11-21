@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action de rapport PDF QWeb -->
+    <record id="action_report_absence_request" model="ir.actions.report">
+        <field name="name">Titre de congé / Bon de sortie</field>
+        <field name="model">insea.absence.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">insea_hr_leave_custom.report_absence_request_document</field>
+        <field name="report_file">insea_hr_leave_custom.report_absence_request_document</field>
+        <field name="print_report_name">('Bon_sortie_%s' if object.category == 'authorization' else 'Titre_conge_%s') % (object.name or 'demande').replace('/', '_')</field>
+        <field name="binding_model_id" ref="model_insea_absence_request"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Modèle QWeb du document PDF -->
+    <template id="report_absence_request_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- En-tête du titre -->
+                        <div class="row mb-4 pb-2" style="border-bottom: 2px solid #1B365D;">
+                            <div class="col-8">
+                                <h2 style="color: #1B365D; margin-bottom: 4px;">
+                                    <t t-if="o.category == 'authorization'">BON D'AUTORISATION DE SORTIE</t>
+                                    <t t-else="">TITRE DE CONGÉ</t>
+                                </h2>
+                                <p class="text-muted mb-0">
+                                    Référence : <strong t-field="o.name"/>
+                                </p>
+                            </div>
+                            <div class="col-4 text-end">
+                                <span t-if="o.state == 'approved'"
+                                      class="badge rounded-pill text-bg-success fs-6 px-3 py-2">
+                                    VALIDÉ
+                                </span>
+                                <span t-elif="o.state == 'cancelled'"
+                                      class="badge rounded-pill text-bg-secondary fs-6 px-3 py-2">
+                                    ANNULÉ
+                                </span>
+                                <span t-elif="o.state == 'refused'"
+                                      class="badge rounded-pill text-bg-danger fs-6 px-3 py-2">
+                                    REFUSÉ
+                                </span>
+                                <span t-else=""
+                                      class="badge rounded-pill text-bg-warning fs-6 px-3 py-2">
+                                    EN COURS
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Informations collaborateur -->
+                        <h5 style="color: #0E7490; margin-bottom: 10px;">1. Informations du collaborateur</h5>
+                        <table class="table table-sm table-bordered mb-4">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 28%; background-color: #F0F4F8;">Collaborateur</th>
+                                    <td style="width: 22%;"><span t-field="o.employee_id.name"/></td>
+                                    <th style="width: 25%; background-color: #F0F4F8;">Département</th>
+                                    <td style="width: 25%;"><span t-field="o.department_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: #F0F4F8;">Poste</th>
+                                    <td><span t-field="o.employee_id.job_title"/></td>
+                                    <th style="background-color: #F0F4F8;">Responsable (N+1)</th>
+                                    <td><span t-field="o.manager_id.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Détails de la demande -->
+                        <h5 style="color: #0E7490; margin-bottom: 10px;">2. Détails de la demande</h5>
+                        <table class="table table-sm table-bordered mb-4">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%; background-color: #F0F4F8;">Nature de la demande</th>
+                                    <td><span t-field="o.category"/></td>
+                                </tr>
+                                <tr t-if="o.category == 'authorization' and o.authorization_reason">
+                                    <th style="background-color: #F0F4F8;">Motif de l'autorisation</th>
+                                    <td><span t-field="o.authorization_reason"/></td>
+                                </tr>
+                                <tr t-if="o.category == 'exceptional' and o.family_event">
+                                    <th style="background-color: #F0F4F8;">Événement familial</th>
+                                    <td><span t-field="o.family_event"/></td>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: #F0F4F8;">Période</th>
+                                    <td><strong t-field="o.period_display"/></td>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: #F0F4F8;">Durée</th>
+                                    <td><strong t-field="o.duration_display"/></td>
+                                </tr>
+                                <tr t-if="o.impacts_balance">
+                                    <th style="background-color: #F0F4F8;">Solde de congés payés actuel</th>
+                                    <td><span t-esc="'%g jour(s)' % o.employee_leave_balance"/></td>
+                                </tr>
+                                <tr t-if="o.description">
+                                    <th style="background-color: #F0F4F8;">Commentaire</th>
+                                    <td><span t-field="o.description"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Circuit de validation -->
+                        <h5 style="color: #0E7490; margin-bottom: 10px;">3. Circuit de validation</h5>
+                        <table class="table table-sm table-bordered mb-5">
+                            <thead style="background-color: #F0F4F8;">
+                                <tr>
+                                    <th>Étape</th>
+                                    <th>Intervenant</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Soumission</td>
+                                    <td><span t-field="o.employee_id.name"/></td>
+                                    <td><span t-field="o.submit_date" t-options='{"widget": "datetime"}'/></td>
+                                </tr>
+                                <tr t-if="o.manager_user_id">
+                                    <td>Validation N+1</td>
+                                    <td><span t-field="o.manager_user_id.name"/></td>
+                                    <td><span t-field="o.manager_date" t-options='{"widget": "datetime"}'/></td>
+                                </tr>
+                                <tr t-if="o.requires_hr_validation and o.hr_user_id">
+                                    <td>Validation RH (finale)</td>
+                                    <td><span t-field="o.hr_user_id.name"/></td>
+                                    <td><span t-field="o.hr_date" t-options='{"widget": "datetime"}'/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Signatures -->
+                        <div class="row mt-5 pt-3">
+                            <div class="col-4 text-center">
+                                <p class="fw-bold mb-5">Signature du collaborateur</p>
+                                <div style="border-top: 1px solid #94A3B8; width: 80%; margin: 0 auto;"/>
+                            </div>
+                            <div class="col-4 text-center">
+                                <p class="fw-bold mb-5">Visa du Responsable (N+1)</p>
+                                <div style="border-top: 1px solid #94A3B8; width: 80%; margin: 0 auto;"/>
+                            </div>
+                            <div class="col-4 text-center">
+                                <p class="fw-bold mb-5">Visa du Service RH</p>
+                                <div style="border-top: 1px solid #94A3B8; width: 80%; margin: 0 auto;"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

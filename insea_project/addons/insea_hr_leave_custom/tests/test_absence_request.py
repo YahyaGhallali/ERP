@@ -316,3 +316,83 @@ class TestAbsenceRequest(TransactionCase):
             with self.cr.savepoint():
                 self._request(category='paid', date_from=self._monday(14),
                               date_to=self._monday(14) - timedelta(days=3))
+
+    # --- Nouvelles fonctionnalités (annulation, PDF, notifications) ----------
+    def test_26_employee_cancel_submitted_and_reset(self):
+        req = self._paid(self._monday(14), 3)
+        req.with_user(self.user_emp).action_submit()
+        self.assertEqual(self.emp.insea_leave_pending, 3.0)
+        wiz = self.env['insea.absence.cancel.wizard'].with_user(self.user_emp).create({
+            'request_id': req.id,
+            'reason': "Changement de programme personnel",
+        })
+        wiz.action_confirm()
+        self.assertEqual(req.state, 'cancelled')
+        self.assertEqual(req.cancelled_by_id, self.user_emp)
+        self.assertEqual(self.emp.insea_leave_pending, 0.0)
+        # Peut être remise en brouillon par l'employé
+        req.with_user(self.user_emp).action_reset_to_draft()
+        self.assertEqual(req.state, 'draft')
+
+    def test_27_hr_cancel_approved_refunds_balance(self):
+        req = self._paid(self._monday(14), 3)
+        req.with_user(self.user_emp).action_submit()
+        req.with_user(self.user_manager).action_manager_approve()
+        req.with_user(self.user_hr).action_hr_approve()
+        self.assertEqual(self.emp.insea_leave_balance, 12.0)
+        # L'employé ne peut pas annuler une demande déjà validée
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_emp).action_open_cancel_wizard()
+        # Les RH peuvent annuler et le solde est recrédité automatiquement
+        wiz = self.env['insea.absence.cancel.wizard'].with_user(self.user_hr).create({
+            'request_id': req.id,
+            'reason': "Report suite à nécessité de service",
+        })
+        wiz.action_confirm()
+        self.assertEqual(req.state, 'cancelled')
+        self.assertEqual(self.emp.insea_leave_balance, 15.0)
+
+    def test_28_pdf_report_only_when_approved(self):
+        req = self._paid(self._monday(14), 2)
+        with self.assertRaises(UserError):
+            req.with_user(self.user_emp).action_print_report()
+        req.with_user(self.user_emp).action_submit()
+        req.with_user(self.user_manager).action_manager_approve()
+        req.with_user(self.user_hr).action_hr_approve()
+        action = req.with_user(self.user_emp).action_print_report()
+        self.assertEqual(action.get('type'), 'ir.actions.report')
+        self.assertEqual(
+            action.get('report_name'),
+            'insea_hr_leave_custom.report_absence_request_document',
+        )
+        # Vérifie aussi que le template QWeb se rend sans erreur
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'insea_hr_leave_custom.report_absence_request_document', [req.id]
+        )
+        self.assertIn(req.name.encode(), html)
+
+    def test_29_email_notifications_queued(self):
+        Mail = self.env['mail.mail'].sudo()
+        before = Mail.search_count([])
+        req = self._paid(self._monday(14), 2)
+        req.with_user(self.user_emp).action_submit()
+        self.assertGreater(Mail.search_count([]), before)
+        after_submit = Mail.search_count([])
+        req.with_user(self.user_manager).action_manager_approve()
+        req.with_user(self.user_hr).action_hr_approve()
+        self.assertGreater(Mail.search_count([]), after_submit)
+
+    def test_30_cron_reminders_pending_and_rate_limit(self):
+        req = self._paid(self._monday(14), 2)
+        req.with_user(self.user_emp).action_submit()
+        # Simuler une soumission datant de 72 h
+        old_dt = fields.Datetime.now() - timedelta(hours=72)
+        req.with_context(insea_workflow=True).sudo().write({'submit_date': old_dt})
+        msg_before = len(req.message_ids)
+        self.env['insea.absence.request']._cron_send_reminders()
+        self.assertTrue(req.last_reminder_date)
+        self.assertGreater(len(req.message_ids), msg_before)
+        # Un deuxième appel immédiat ne renvoie pas de doublon (fenêtre 24 h)
+        msg_after_first = len(req.message_ids)
+        self.env['insea.absence.request']._cron_send_reminders()
+        self.assertEqual(len(req.message_ids), msg_after_first)

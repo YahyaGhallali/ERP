@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- 1. Notification au Manager N+1 lors de la soumission -->
+        <record id="mail_template_absence_submitted" model="mail.template">
+            <field name="name">INSEA Absences : nouvelle demande soumise (N+1)</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="subject">[{{ object.name }}] Nouvelle demande d'absence de {{ object.employee_id.name }}</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.manager_user_related_id.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1E293B;">
+                    <p>Bonjour <t t-out="object.manager_id.name or 'Responsable'"/>,</p>
+                    <p>
+                        <strong><t t-out="object.employee_id.name"/></strong> vient de soumettre une demande d'absence
+                        (<strong><t t-out="object.name"/></strong>) nécessitant votre validation N+1 :
+                    </p>
+                    <ul>
+                        <li><strong>Type :</strong> <t t-out="dict(object._fields['category'].selection).get(object.category)"/></li>
+                        <li><strong>Période :</strong> <t t-out="object.period_display or ''"/></li>
+                        <li><strong>Durée :</strong> <t t-out="object.duration_display or ''"/></li>
+                    </ul>
+                    <p>Merci de vous connecter à Odoo pour la traiter.</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- 2. Notification à l'employé lors d'une validation -->
+        <record id="mail_template_absence_approved" model="mail.template">
+            <field name="name">INSEA Absences : demande validée (Employé)</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="subject">[{{ object.name }}] Votre demande d'absence a été validée</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.user_id.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1E293B;">
+                    <p>Bonjour <t t-out="object.employee_id.name"/>,</p>
+                    <p>
+                        Votre demande <strong><t t-out="object.name"/></strong>
+                        (<t t-out="object.period_display or ''"/> — <t t-out="object.duration_display or ''"/>)
+                        a été <strong>validée définitivement</strong>.
+                    </p>
+                    <p t-if="object.impacts_balance">
+                        <strong><t t-out="'%g' % object.duration_days"/> jour(s)</strong> ont été déduits de votre solde de congés payés
+                        (solde actuel : <strong><t t-out="'%g' % object.employee_leave_balance"/> jour(s)</strong>).
+                    </p>
+                    <p>Vous pouvez désormais imprimer votre titre de congé / bon de sortie au format PDF depuis Odoo.</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- 3. Notification à l'employé lors d'un refus -->
+        <record id="mail_template_absence_refused" model="mail.template">
+            <field name="name">INSEA Absences : demande refusée (Employé)</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="subject">[{{ object.name }}] Votre demande d'absence a été refusée</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.user_id.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1E293B;">
+                    <p>Bonjour <t t-out="object.employee_id.name"/>,</p>
+                    <p>
+                        Votre demande <strong><t t-out="object.name"/></strong>
+                        (<t t-out="object.period_display or ''"/>) a été <strong>refusée</strong>
+                        par <t t-out="object.refused_by_id.name or ''"/>.
+                    </p>
+                    <p><strong>Motif du refus :</strong> <t t-out="object.refusal_reason or ''"/></p>
+                    <p>Vous pouvez remettre cette demande en brouillon dans Odoo pour la corriger si nécessaire.</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- 4. Notification lors d'une annulation -->
+        <record id="mail_template_absence_cancelled" model="mail.template">
+            <field name="name">INSEA Absences : demande annulée</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="subject">[{{ object.name }}] Demande d'absence annulée</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.user_id.email }}</field>
+            <field name="email_cc">{{ object.manager_user_related_id.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1E293B;">
+                    <p>Bonjour,</p>
+                    <p>
+                        La demande <strong><t t-out="object.name"/></strong> de
+                        <strong><t t-out="object.employee_id.name"/></strong>
+                        (<t t-out="object.period_display or ''"/>) a été <strong>annulée</strong>
+                        par <t t-out="object.cancelled_by_id.name or ''"/>.
+                    </p>
+                    <p><strong>Motif d'annulation :</strong> <t t-out="object.cancel_reason or ''"/></p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- 5. Rappel automatique (validation en attente > 48 h) -->
+        <record id="mail_template_absence_reminder" model="mail.template">
+            <field name="name">INSEA Absences : rappel de validation en attente</field>
+            <field name="model_id" ref="model_insea_absence_request"/>
+            <field name="subject">[Rappel][{{ object.name }}] Demande d'absence en attente de validation</field>
+            <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.manager_user_related_id.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #1E293B;">
+                    <p>Bonjour,</p>
+                    <p>
+                        La demande <strong><t t-out="object.name"/></strong> de
+                        <strong><t t-out="object.employee_id.name"/></strong>
+                        (<t t-out="object.period_display or ''"/> — <t t-out="object.duration_display or ''"/>)
+                        est en attente de validation depuis plus de 48 heures.
+                    </p>
+                    <p>Merci de la traiter dans Odoo.</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

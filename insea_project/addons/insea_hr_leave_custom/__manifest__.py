@@ -20,10 +20,15 @@ Validation RH, et droits d'accès par profil (Employé, Manager, RH, Admin).
         # 1. Sécurité (toujours en premier : groupes avant droits et règles)
         'security/security.xml',
         'security/ir.model.access.csv',
-        # 2. Données de base
+        # 2. Données de base & notifications
         'data/ir_sequence_data.xml',
-        # 3. Vues
+        'data/mail_template_data.xml',
+        'data/ir_cron_data.xml',
+        # 3. Rapports PDF (QWeb)
+        'report/absence_request_report.xml',
+        # 4. Vues & assistants
         'wizard/refuse_wizard_views.xml',
+        'wizard/cancel_wizard_views.xml',
         'views/absence_request_views.xml',
         'views/hr_employee_views.xml',
         'views/menus.xml',
