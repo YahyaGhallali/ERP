@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.5.2)  19 NOV 2026 18:38
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.5.2)  20 NOV 2026 16:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**./rapport_insea_odoo.tex
-(rapport_insea_odoo.tex
+**./rapport/rapport_insea_odoo.tex
+(rapport/rapport_insea_odoo.tex
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-03-26>
 (C:\Users\yahya\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
@@ -859,7 +859,7 @@ File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 tex.def
 File: l3backend-pdftex.def 2025-03-14 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count339
-) (rapport_insea_odoo.aux
+) (C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.aux
 Package babel Info: 'french' activates 'french' shorthands.
 (babel)             Reported  on input line 11.
 )
@@ -953,7 +953,8 @@ fg
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
 Package hyperref Info: Link coloring ON on input line 73.
- (rapport_insea_odoo.out) (rapport_insea_odoo.out)
+ (C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.out)
+(C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.out)
 \@outlinefile=\write4
 \openout4 = `rapport_insea_odoo.out'.
 
@@ -993,12 +994,15 @@ LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 9
 (C:\Users\yahya\AppData\Local\Programs\MiKTeX\tex/latex/lm\t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10.95> on input line 103.
+
 
 [1
 
 {C:/Users/yahya/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/yahy
 a/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc}]
-(rapport_insea_odoo.toc)
+(C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.toc)
 \tf@toc=\write5
 \openout5 = `rapport_insea_odoo.toc'.
 
@@ -1098,7 +1102,8 @@ Package pdftex.def Info: figures/01_employee_list.png  used on input line 492.
 (pdftex.def)             Requested size: 448.6987pt x 280.44157pt.
 
 
-[6 <./figures/01_employee_list.png (PNG copy)>]
+[6 <C:/Users/yahya/Downloads/ERP/rapport/figures/01_employee_list.png (PNG copy
+)>]
 <figures/02_employee_form.png, id=173, 1027.84pt x 642.4pt>
 File: figures/02_employee_form.png Graphic file (type png)
 <use figures/02_employee_form.png>
@@ -1112,7 +1117,8 @@ Package pdftex.def Info: figures/03_manager_validation.png  used on input line
 (pdftex.def)             Requested size: 448.6987pt x 280.44157pt.
 
 
-[7 <./figures/02_employee_form.png (PNG copy)>]
+[7 <C:/Users/yahya/Downloads/ERP/rapport/figures/02_employee_form.png (PNG copy
+)>]
 <figures/04_manager_calendar.png, id=183, 1027.84pt x 642.4pt>
 File: figures/04_manager_calendar.png Graphic file (type png)
 <use figures/04_manager_calendar.png>
@@ -1128,8 +1134,9 @@ ustre la va-li-da-tion fi-nale du congé ma-la-die de Bi-lal E. (\T1/lmtt/m/n/10
 
 
 
-[8 <./figures/03_manager_validation.png (PNG copy)> <./figures/04_manager_calen
-dar.png (PNG copy)>]
+[8 <C:/Users/yahya/Downloads/ERP/rapport/figures/03_manager_validation.png (PNG
+ copy)> <C:/Users/yahya/Downloads/ERP/rapport/figures/04_manager_calendar.png (
+PNG copy)>]
 <figures/05_hr_validation.png, id=190, 1027.84pt x 642.4pt>
 File: figures/05_hr_validation.png Graphic file (type png)
 <use figures/05_hr_validation.png>
@@ -1142,7 +1149,8 @@ Package pdftex.def Info: figures/06_hr_balances.png  used on input line 539.
 (pdftex.def)             Requested size: 448.6987pt x 280.44157pt.
 
 
-[9 <./figures/05_hr_validation.png (PNG copy)>]
+[9 <C:/Users/yahya/Downloads/ERP/rapport/figures/05_hr_validation.png (PNG copy
+)>]
 <figures/07_hr_analysis.png, id=201, 1027.84pt x 642.4pt>
 File: figures/07_hr_analysis.png Graphic file (type png)
 <use figures/07_hr_analysis.png>
@@ -1162,8 +1170,9 @@ db -r odoo -w odoo
 
 
 
-[10 <./figures/06_hr_balances.png (PNG copy)> <./figures/07_hr_analysis.png (PN
-G copy)>]
+[10 <C:/Users/yahya/Downloads/ERP/rapport/figures/06_hr_balances.png (PNG copy)
+> <C:/Users/yahya/Downloads/ERP/rapport/figures/07_hr_analysis.png (PNG copy)>]
+
 Underfull \hbox (badness 3219) in paragraph at lines 580--580
 []|\T1/lmr/bx/n/10 Calculs & ca-
  []
@@ -1175,7 +1184,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 580--580
 
 
 
-[11] (rapport_insea_odoo.aux)
+[11] (C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-03-26>
@@ -1184,13 +1193,13 @@ Package rerunfilecheck Info: File `rapport_insea_odoo.out' has not changed.
 (rerunfilecheck)             Checksum: F35104C92900B4693A97459CED02692A;4656.
  ) 
 Here is how much of TeX's memory you used:
- 27292 strings out of 469959
- 532703 string characters out of 5469835
- 942046 words of memory out of 5000000
- 53578 multiletter control sequences out of 15000+600000
- 722162 words of font info for 93 fonts, out of 8000000 for 9000
+ 27296 strings out of 469959
+ 533050 string characters out of 5469835
+ 943062 words of memory out of 5000000
+ 53581 multiletter control sequences out of 15000+600000
+ 724957 words of font info for 94 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 98i,16n,101p,626b,875s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,16n,101p,634b,875s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx10.pf
 b><C:/Users/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx12.pf
 b><C:/Users/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmbx8.pfb
@@ -1210,7 +1219,8 @@ s/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt10.pfb><C:/User
 s/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt12.pfb><C:/User
 s/yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt8.pfb><C:/Users
 /yahya/AppData/Local/Programs/MiKTeX/fonts/type1/public/lm/lmtt9.pfb>
-Output written on rapport_insea_odoo.pdf (12 pages, 1095874 bytes).
+Output written on C:\Users\yahya\Downloads\ERP\rapport\rapport_insea_odoo.pdf (
+12 pages, 1096425 bytes).
 PDF statistics:
  310 PDF objects out of 1000 (max. 8388607)
  52 named destinations out of 1000 (max. 500000)
